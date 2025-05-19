@@ -1,241 +1,161 @@
-# Lynkledger - Modern Accounting System
+# Lynkledger
 
-Lynkledger is a modern accounting application with advanced features including AI integration, real-time collaboration, and multi-language support.
+Sistema de gestión financiera y contabilidad empresarial moderno y eficiente.
 
-## Features
+## Descripción
 
-- Double-entry accounting system
-- Multi-organization support
-- Real-time collaboration
-- Document management with OCR
-- AI-powered assistance
-- Multi-language support (English/Spanish)
-- Advanced reporting and analytics
-- Budget management
-- Invoice and payment tracking
-- Tax rate management
-- Fixed assets tracking
-- Recurring transactions
+Lynkledger es una aplicación web completa para la gestión financiera y contable de empresas, construida con tecnologías modernas y siguiendo las mejores prácticas de desarrollo.
 
-## Requisitos Previos
+## Tecnologías Principales
 
-1. **Software Necesario**:
-   - Git ([Descargar](https://git-scm.com/download/win))
-   - Docker Desktop ([Descargar](https://www.docker.com/products/docker-desktop))
-   - Visual Studio Code (recomendado) ([Descargar](https://code.visualstudio.com/))
+- **Backend**: Django 4.2.10, Django REST Framework
+- **Frontend**: React, TypeScript
+- **Base de Datos**: PostgreSQL 15
+- **Cache**: Redis
+- **Proxy Inverso**: Nginx
+- **Contenedorización**: Docker, Docker Compose
 
-2. **Requisitos del Sistema**:
-   - Windows 10/11 Pro, Enterprise o Education (64-bit)
-   - Mínimo 8GB RAM
-   - 10GB espacio libre en disco
-   - Virtualización habilitada en BIOS
+## Requisitos
 
-## Instalación
+- Docker
+- Docker Compose
 
-1. **Clonar el Repositorio**:
-   ```bash
-   git clone <URL_DEL_REPOSITORIO>
-   cd lynkledger
-   ```
+## Instalación y Configuración
 
-2. **Configurar Variables de Entorno**:
-   ```bash
-   cp .env.example .env
-   # Editar .env con tus configuraciones
-   ```
+1. Clona el repositorio:
+```bash
+git clone https://github.com/yourusername/lynkledger.git
+cd lynkledger
+```
 
-3. **Iniciar en Modo Desarrollo**:
-   ```bash
-   docker-compose up -d
-   ```
+2. Crea un archivo `.env` en la raíz del proyecto (usa `.env.example` como referencia)
 
-4. **Iniciar en Modo Producción**:
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
+3. Construye e inicia los servicios:
+```bash
+docker compose up -d --build
+```
 
-5. **Crear Superusuario**:
-   ```bash
-   docker-compose exec backend python manage.py createsuperuser
-   ```
+4. Aplica las migraciones:
+```bash
+docker compose exec backend python manage.py migrate
+```
+
+5. Crea un superusuario (opcional):
+```bash
+docker compose exec backend python manage.py createsuperuser
+```
 
 ## Acceso a la Aplicación
 
-- Frontend: http://localhost:3000
-- API: http://localhost:8000/api
-- Admin: http://localhost:8000/admin
+- **Frontend**: http://localhost
+- **API Backend**: http://localhost/api
+- **Admin Django**: http://localhost/admin
+- **Health Check**: http://localhost/api/health-check
 
-## Solución de Problemas Comunes
+## Desarrollo
 
-1. **Docker no Inicia**:
-   - Verificar que Docker Desktop esté corriendo
-   - Verificar que WSL2 esté instalado y actualizado
-   - Reiniciar Docker Desktop
+### Estructura del Proyecto
+```
+lynkledger/
+├── backend/             # Aplicación Django
+├── frontend/           # Aplicación React
+├── nginx/              # Configuración de Nginx
+└── docker-compose.yml  # Configuración de servicios
+```
 
-2. **Problemas de Permisos**:
-   - Ejecutar Docker Desktop como administrador
-   - Verificar permisos en carpetas de volúmenes
+### Monitoreo de Logs en Desarrollo
 
-3. **Problemas de Red**:
-   - Verificar que los puertos 3000, 8000 y 5432 estén libres
-   - Verificar configuración de firewall
+Para monitorear los logs de los diferentes servicios en tiempo real, puedes usar los siguientes comandos en terminales separadas:
 
-4. **Problemas de Base de Datos**:
-   ```bash
-   # Reiniciar la base de datos
-   docker-compose down -v
-   docker-compose up -d
-   ```
+#### Backend (Django)
+```bash
+docker compose logs backend -f
+```
+Esto mostrará:
+- Errores de Python/Django
+- Peticiones HTTP recibidas
+- Mensajes de debug
+- Estado de las migraciones
+- Cambios en archivos (auto-reload)
 
-## Respaldo y Migración
+#### Frontend (React)
+```bash
+docker compose logs frontend -f
+```
+Esto mostrará:
+- Compilación de webpack
+- Errores de JavaScript/TypeScript
+- Hot-reload status
+- Problemas de dependencias
+- Mensajes de consola del navegador
 
-1. **Respaldar Base de Datos**:
-   ```bash
-   docker-compose exec db pg_dump -U postgres lynkledger > backup.sql
-   ```
+#### Base de Datos (PostgreSQL)
+```bash
+docker compose logs db -f
+```
 
-2. **Restaurar Base de Datos**:
-   ```bash
-   docker-compose exec -T db psql -U postgres lynkledger < backup.sql
-   ```
+#### Redis
+```bash
+docker compose logs redis -f
+```
 
-3. **Respaldar Archivos de Media**:
-   ```bash
-   zip -r media_backup.zip backend/media/
-   ```
+#### Nginx
+```bash
+docker compose logs nginx -f
+```
 
-## Mantenimiento
+#### Todos los servicios
+```bash
+docker compose logs -f
+```
 
-1. **Actualizar Dependencias**:
-   ```bash
-   # Backend
-   docker-compose exec backend pip install -r requirements.txt
+### Comandos Útiles
 
-   # Frontend
-   docker-compose exec frontend npm install
-   ```
+#### Detener los Servicios
+```bash
+# Detener todos los servicios
+docker compose down
 
-2. **Limpiar Docker**:
-   ```bash
-   docker-compose down
-   docker system prune -a
-   ```
+# Detener un servicio específico
+docker compose stop <service_name>
+```
 
-## Seguridad
+#### Reiniciar Servicios
+```bash
+# Reiniciar todos los servicios
+docker compose restart
 
-1. **En Desarrollo**:
-   - Usar contraseñas seguras en .env
-   - No exponer puertos innecesarios
-   - Mantener Docker actualizado
+# Reiniciar un servicio específico
+docker compose restart <service_name>
+```
 
-2. **En Producción**:
-   - Usar docker-compose.prod.yml
-   - Configurar HTTPS/SSL
-   - Cambiar todas las contraseñas por defecto
-   - Configurar backups automáticos
+#### Ejecutar Comandos
+```bash
+# Ejecutar comando en el backend
+docker compose exec backend python manage.py <command>
 
-## Soporte
+# Ejecutar comando en el frontend
+docker compose exec frontend npm <command>
+```
 
-Para soporte técnico:
-1. Revisar la documentación en `/docs`
-2. Crear un issue en el repositorio
-3. Contactar al equipo de desarrollo
+## Testing
+
+```bash
+# Ejecutar tests del backend
+docker compose exec backend python manage.py test
+
+# Ejecutar tests del frontend
+docker compose exec frontend npm test
+```
 
 ## Contribuir
 
 1. Fork el repositorio
-2. Crear una rama para tu feature
-3. Commit tus cambios
-4. Push a la rama
-5. Crear Pull Request
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-## Project Structure
+## Licencia
 
-```
-lynkledger/
-├── backend/           # Django backend
-│   ├── accounting/    # Core accounting functionality
-│   ├── users/         # User management
-│   ├── organizations/ # Organization management
-│   ├── documents/     # Document management
-│   ├── messaging/     # Real-time messaging
-│   ├── notifications/ # User notifications
-│   └── ai_assistant/  # AI integration
-├── frontend/          # React frontend
-├── nginx/            # Nginx configuration
-└── postgres/         # PostgreSQL data
-```
-
-## Development
-
-### Backend Development
-
-1. Install Python dependencies:
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   ```
-
-2. Run migrations:
-   ```bash
-   python manage.py migrate
-   ```
-
-3. Start development server:
-   ```bash
-   python manage.py runserver
-   ```
-
-### Frontend Development
-
-1. Install Node.js dependencies:
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. Start development server:
-   ```bash
-   npm start
-   ```
-
-## Testing
-
-### Backend Tests
-```bash
-docker-compose exec backend python manage.py test
-```
-
-### Frontend Tests
-```bash
-docker-compose exec frontend npm test
-```
-
-## Deployment
-
-1. Update `.env` file with production settings
-2. Build production images:
-   ```bash
-   docker-compose -f docker-compose.prod.yml build
-   ```
-3. Deploy containers:
-   ```bash
-   docker-compose -f docker-compose.prod.yml up -d
-   ```
-
-## Security Considerations
-
-- Change all default passwords in production
-- Use strong SECRET_KEY in Django settings
-- Configure proper ALLOWED_HOSTS
-- Enable HTTPS in production
-- Set up proper backup strategy
-- Configure proper file storage (e.g., AWS S3)
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For support, please open an issue in the GitHub repository or contact support@lynkledger.com 
+[Tipo de Licencia] - ver archivo LICENSE.md para más detalles 

@@ -18,6 +18,10 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.http import JsonResponse
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
 
 # API URLs
 api_patterns = [
@@ -26,9 +30,21 @@ api_patterns = [
     path('accounting/', include('accounting.urls')),
 ]
 
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """
+    A public endpoint to check if the API is running
+    """
+    return Response({
+        'status': 'healthy',
+        'message': 'Backend API is running'
+    })
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/v1/', include(api_patterns)),
+    path('api/health-check/', health_check, name='health-check'),
 ]
 
 # Serve media files in development
