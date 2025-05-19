@@ -2,11 +2,14 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copiar primero package.json y package-lock.json
-COPY package.json package-lock.json* ./
+# Instalar dependencias globales necesarias
+RUN npm install -g npm@latest
 
-# Instalar dependencias
-RUN npm install
+# Copiar solo los archivos necesarios para la instalación de dependencias
+COPY package*.json ./
+
+# Instalar dependencias con flags para optimizar
+RUN npm ci --only=production --no-audit --no-optional
 
 # Copiar el resto de los archivos
 COPY . .
