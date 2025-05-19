@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - .env
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:alpine
+    volumes:
+      - redis_data:/data
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    volumes:
+      - static_files:/app/staticfiles
+      - media_files:/app/media
+    expose:
+      - "8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file:
+      - .env
+    command: >
+      sh -c "
+        mkdir -p staticfiles media &&
+        python manage.py migrate &&
+        python manage.py collectstatic --noinput &&
+        gunicorn lynkledger_api.wsgi:application --bind 0.0.0.0:8000 --workers 4"
+
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    command: celery -A lynkledger_api worker -l info
+    volumes:
+      - media_files:/app/media
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    command: celery -A lynkledger_api beat -l info
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    volumes:
+      - frontend_build:/app/build
+
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - static_files:/usr/share/nginx/html/static
+      - media_files:/usr/share/nginx/html/media
+      - frontend_build:/usr/share/nginx/html
+      - ./nginx/ssl:/etc/nginx/ssl
+    restart: always
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_files:
+  media_files:
+  frontend_build: 
