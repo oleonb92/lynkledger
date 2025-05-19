@@ -27,13 +27,17 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-@9yu83i=h@c3z#*r*c(me
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '*']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 CORS_ALLOW_ALL_ORIGINS = True  # Only for development
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+# Django requiere que los orígenes de CSRF no tengan barra al final y empiecen con http(s)://
+CSRF_TRUSTED_ORIGINS = [origin.rstrip('/') for origin in CSRF_TRUSTED_ORIGINS if origin]
 
 # Application definition
 
