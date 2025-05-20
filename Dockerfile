@@ -30,6 +30,9 @@ COPY backend /app/
 # Copy Nginx configuration
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 
+# Copy supervisord configuration
+COPY supervisord.conf /app/supervisord.conf
+
 # Create necessary directories and set permissions
 RUN mkdir -p /app/staticfiles /app/media \
     && chmod -R 755 /app/staticfiles /app/media
@@ -46,7 +49,4 @@ USER myuser
 EXPOSE 80 8000
 
 # Command to run on container start
-CMD ["/usr/local/bin/supervisord", "-c", "/app/supervisord.conf"]
-
-# Copiar configuración de supervisord
-COPY supervisord.conf /app/supervisord.conf 
+CMD ["/usr/local/bin/supervisord", "-c", "/app/supervisord.conf"] 
