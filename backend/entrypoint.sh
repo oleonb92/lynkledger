@@ -36,13 +36,4 @@ python manage.py collectstatic --noinput --clear -v 2
 
 # Verify static files
 echo "Verifying static files..."
-ls -la /app/staticfiles/admin/css/
-
-# Start Gunicorn with static files serving
-echo "Starting Gunicorn..."
-exec gunicorn lynkledger_api.wsgi:application \
-    --bind 0.0.0.0:8000 \
-    --workers 4 \
-    --access-logfile - \
-    --error-logfile - \
-    --log-level info 
+ls -la /app/staticfiles/admin/css/ 

@@ -12,6 +12,7 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        nginx \
         postgresql-client \
         build-essential \
         libpq-dev \
@@ -26,6 +27,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY backend /app/
 
+# Copy Nginx configuration
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+
 # Create necessary directories and set permissions
 RUN mkdir -p /app/staticfiles /app/media \
     && chmod -R 755 /app/staticfiles /app/media
@@ -38,5 +42,11 @@ RUN useradd -m myuser \
     && chown -R myuser:myuser /app
 USER myuser
 
+# Expose ports
+EXPOSE 80 8000
+
 # Command to run on container start
-CMD ["/app/entrypoint.sh"] 
+CMD ["/usr/local/bin/supervisord", "-c", "/app/supervisord.conf"]
+
+# Copiar configuración de supervisord
+COPY supervisord.conf /app/supervisord.conf 
