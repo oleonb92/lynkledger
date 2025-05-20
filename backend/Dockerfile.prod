@@ -36,5 +36,8 @@ RUN useradd -m myuser
 RUN chown -R myuser:myuser /app
 USER myuser
 
+# Expose ports
+EXPOSE 80 8000
+
 # Command to run on container start
-CMD ["/app/entrypoint.sh"] 
+CMD ["/usr/bin/supervisord", "-c", "/app/supervisord.conf"] 
