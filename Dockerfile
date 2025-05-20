@@ -49,4 +49,4 @@ USER myuser
 EXPOSE 80 8000
 
 # Command to run on container start
-CMD ["/usr/bin/supervisord", "-c", "/app/supervisord.conf"] 
+CMD ["gunicorn", "lynkledger_api.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"] 
