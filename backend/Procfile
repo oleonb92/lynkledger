@@ -1,0 +1,1 @@
+web: gunicorn lynkledger_api.wsgi --log-file - 

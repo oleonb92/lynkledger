@@ -32,8 +32,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile.prod
     volumes:
-      - static_files:/app/staticfiles
-      - media_files:/app/media
+      - static_files:/app/staticfiles:rw
+      - media_files:/app/media:rw
     expose:
       - "8000"
     depends_on:
@@ -45,7 +45,8 @@ services:
       - .env
     command: >
       sh -c '
-        mkdir -p /usr/share/nginx/html/static /app/media &&
+        mkdir -p /app/staticfiles /app/media &&
+        chmod -R 755 /app/staticfiles /app/media &&
         python manage.py migrate &&
         echo "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username=\"admin\").exists() or User.objects.create_superuser(\"admin\", \"osmanileon92@gmail.com\", \"Natali@rca1992\")" > create_superuser.py &&
         python manage.py shell < create_superuser.py &&
@@ -94,10 +95,10 @@ services:
       - backend
       - frontend
     volumes:
-      - static_files:/usr/share/nginx/html/static
-      - media_files:/usr/share/nginx/html/media
-      - frontend_build:/usr/share/nginx/html
-      - ./nginx/ssl:/etc/nginx/ssl
+      - static_files:/usr/share/nginx/html/static:ro
+      - media_files:/usr/share/nginx/html/media:ro
+      - frontend_build:/usr/share/nginx/html:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     restart: always
 
 volumes:
