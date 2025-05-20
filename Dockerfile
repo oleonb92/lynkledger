@@ -49,4 +49,4 @@ USER myuser
 EXPOSE 80 8000
 
 # Command to run on container start
-CMD ["/usr/local/bin/supervisord", "-c", "/app/supervisord.conf"] 
+CMD ["/usr/bin/supervisord", "-c", "/app/supervisord.conf"] 
