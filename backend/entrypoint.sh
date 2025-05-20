@@ -23,20 +23,26 @@ else:
     print('Superuser already exists')
 "
 
-# Ensure static and media directories exist
-echo "Creating static and media directories..."
+# Ensure static and media directories exist and have correct permissions
+echo "Setting up static and media directories..."
 mkdir -p /app/staticfiles
 mkdir -p /app/media
-
-# Collect static files
-echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear
-
-# Set permissions
-echo "Setting permissions..."
 chmod -R 755 /app/staticfiles
 chmod -R 755 /app/media
 
-# Start Gunicorn
+# Collect static files with verbose output
+echo "Collecting static files..."
+python manage.py collectstatic --noinput --clear -v 2
+
+# Verify static files
+echo "Verifying static files..."
+ls -la /app/staticfiles/admin/css/
+
+# Start Gunicorn with static files serving
 echo "Starting Gunicorn..."
-exec gunicorn lynkledger_api.wsgi:application --bind 0.0.0.0:8000 --workers 4 
+exec gunicorn lynkledger_api.wsgi:application \
+    --bind 0.0.0.0:8000 \
+    --workers 4 \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info 
