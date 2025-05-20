@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+import uuid
+from django.utils import timezone
 
 class Organization(models.Model):
     class OrganizationType(models.TextChoices):
@@ -149,3 +151,91 @@ class OrganizationMembership(models.Model):
 
     def has_permission(self, permission):
         return getattr(self, permission, False)
+
+class OrganizationInvitation(models.Model):
+    class StatusChoices(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        ACCEPTED = 'accepted', _('Accepted')
+        DECLINED = 'declined', _('Declined')
+        EXPIRED = 'expired', _('Expired')
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='invitations',
+        verbose_name=_('organization')
+    )
+    email = models.EmailField(_('email'))
+    role = models.CharField(
+        _('role'),
+        max_length=20,
+        choices=OrganizationMembership.RoleChoices.choices,
+        default=OrganizationMembership.RoleChoices.MEMBER
+    )
+    message = models.TextField(_('message'), blank=True)
+    token = models.UUIDField(_('token'), default=uuid.uuid4, unique=True)
+    status = models.CharField(
+        _('status'),
+        max_length=20,
+        choices=StatusChoices.choices,
+        default=StatusChoices.PENDING
+    )
+    created_at = models.DateTimeField(_('created at'), auto_now_add=True)
+    expires_at = models.DateTimeField(_('expires at'))
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='organization_invitations_sent',
+        verbose_name=_('invited by')
+    )
+    accepted_at = models.DateTimeField(_('accepted at'), null=True, blank=True)
+    accepted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='organization_invitations_accepted',
+        verbose_name=_('accepted by')
+    )
+
+    class Meta:
+        verbose_name = _('organization invitation')
+        verbose_name_plural = _('organization invitations')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.email} - {self.organization} ({self.status})"
+
+    def accept(self, user):
+        if self.status != self.StatusChoices.PENDING:
+            return False
+        
+        self.status = self.StatusChoices.ACCEPTED
+        self.accepted_at = timezone.now()
+        self.accepted_by = user
+        self.save()
+
+        # Create membership
+        membership = OrganizationMembership.objects.create(
+            organization=self.organization,
+            user=user,
+            role=self.role,
+            invited_by=self.invited_by,
+            invitation_accepted_at=self.accepted_at
+        )
+        return membership
+
+    def decline(self):
+        if self.status != self.StatusChoices.PENDING:
+            return False
+        
+        self.status = self.StatusChoices.DECLINED
+        self.save()
+        return True
+
+    def expire(self):
+        if self.status == self.StatusChoices.PENDING:
+            self.status = self.StatusChoices.EXPIRED
+            self.save()
+            return True
+        return False
