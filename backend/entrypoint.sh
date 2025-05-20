@@ -23,9 +23,19 @@ else:
     print('Superuser already exists')
 "
 
+# Ensure static and media directories exist
+echo "Creating static and media directories..."
+mkdir -p /app/staticfiles
+mkdir -p /app/media
+
 # Collect static files
 echo "Collecting static files..."
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput --clear
+
+# Set permissions
+echo "Setting permissions..."
+chmod -R 755 /app/staticfiles
+chmod -R 755 /app/media
 
 # Start Gunicorn
 echo "Starting Gunicorn..."
