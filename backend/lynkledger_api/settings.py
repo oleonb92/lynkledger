@@ -33,14 +33,40 @@ ALLOWED_HOSTS = [
     '127.0.0.1'
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True  # Only for development
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = [
+    "https://lynkledger-backend.onrender.com",
+    "http://lynkledger-backend.onrender.com",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://\w+\.onrender\.com$",
+]
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://lynkledger-backend.onrender.com'
+    'https://lynkledger-backend.onrender.com',
+    'http://lynkledger-backend.onrender.com',
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -217,10 +243,18 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
+# CSRF settings
+CSRF_COOKIE_DOMAIN = '.onrender.com'
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_USE_SESSIONS = True
+CSRF_COOKIE_HTTPONLY = False  # Must be False for AJAX requests
+
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_COOKIE_NAME = 'lynkledger_session'
+SESSION_COOKIE_DOMAIN = '.onrender.com'
+SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_NAME = 'lynkledger_csrf'
 
 # Authentication settings
