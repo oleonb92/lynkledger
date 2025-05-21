@@ -57,6 +57,7 @@ class AdminLoginView(LoginView):
             'site_title': _('LynkLedger Admin'),
             'site_header': _('LynkLedger Administration'),
             'has_permission': True,
+            'app_path': self.request.path,
         })
         return context
     
