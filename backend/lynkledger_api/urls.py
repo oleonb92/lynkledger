@@ -26,9 +26,9 @@ from django.views.generic import RedirectView
 
 # API URLs
 api_patterns = [
-    path('users/', include('users.urls', namespace='users')),
-    path('', include('organizations.urls', namespace='organizations')),
-    path('accounting/', include('accounting.urls', namespace='accounting')),
+    path('users/', include(('users.urls', 'users'))),
+    path('', include(('organizations.urls', 'organizations'))),
+    path('accounting/', include(('accounting.urls', 'accounting'))),
 ]
 
 @api_view(['GET'])
@@ -48,7 +48,7 @@ urlpatterns = [
     # Admin URLs
     path('admin/', admin.site.urls, name='admin'),
     # API URLs
-    path('api/v1/', include((api_patterns, 'api'), namespace='api')),
+    path('api/v1/', include((api_patterns, 'api'))),
     path('api/health-check/', health_check, name='health-check'),
 ]
 
