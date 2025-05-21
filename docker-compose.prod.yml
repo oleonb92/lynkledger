@@ -90,8 +90,8 @@ services:
       - backend
       - frontend
     volumes:
-      - static_files:/usr/share/nginx/html/static
-      - media_files:/usr/share/nginx/html/media
+      - static_files:/app/staticfiles
+      - media_files:/app/media
       - frontend_build:/usr/share/nginx/html
       - ./nginx/ssl:/etc/nginx/ssl
     restart: always
