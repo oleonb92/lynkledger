@@ -23,6 +23,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.views.generic import RedirectView
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.generic import TemplateView
 
 # API URLs
 api_patterns = [
@@ -42,10 +44,18 @@ def health_check(request):
         'message': 'Backend API is running'
     })
 
+class AdminLoginView(TemplateView):
+    template_name = 'admin/login.html'
+
+    @ensure_csrf_cookie
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 urlpatterns = [
     # Redirect root to admin
     path('', RedirectView.as_view(url='/admin/', permanent=False)),
     # Admin URLs
+    path('admin/login/', AdminLoginView.as_view(), name='admin_login'),
     path('admin/', admin.site.urls),
     # API URLs
     path('api/v1/', include(api_patterns)),
