@@ -13,6 +13,8 @@ RUN apt-get update \
         postgresql-client \
         build-essential \
         libpq-dev \
+        python3-dev \
+        netcat-traditional \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies
@@ -23,12 +25,20 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create static and media directories
-RUN mkdir -p staticfiles media
+RUN mkdir -p /app/staticfiles \
+    && mkdir -p /app/media \
+    && chmod -R 755 /app/staticfiles \
+    && chmod -R 755 /app/media
 
-# Collect static files
-RUN python manage.py collectstatic --noinput
+# Make entrypoint executable
+RUN chmod +x /app/entrypoint.sh
 
-# Run entrypoint script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-ENTRYPOINT ["/entrypoint.sh"]
+# Create a non-root user
+RUN useradd -m myuser \
+    && chown -R myuser:myuser /app
+
+# Switch to non-root user
+USER myuser
+
+# Set entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]
