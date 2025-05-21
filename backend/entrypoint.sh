@@ -38,13 +38,22 @@ log "Using superuser credentials:"
 log "Username: $DJANGO_SUPERUSER_USERNAME"
 log "Email: $DJANGO_SUPERUSER_EMAIL"
 
-# Check if superuser exists
-if ! python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists()"; then
-    log "Creating superuser..."
-    python manage.py shell -c "
+# Check if superuser exists and create/update it
+log "Checking for superuser..."
+python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
-if not User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists():
+try:
+    user = User.objects.get(username='$DJANGO_SUPERUSER_USERNAME')
+    log('Superuser exists, updating...')
+    user.set_password('$DJANGO_SUPERUSER_PASSWORD')
+    user.is_staff = True
+    user.is_superuser = True
+    user.is_active = True
+    user.save()
+    print('Superuser updated successfully!')
+except User.DoesNotExist:
+    log('Creating new superuser...')
     User.objects.create_superuser(
         username='$DJANGO_SUPERUSER_USERNAME',
         email='$DJANGO_SUPERUSER_EMAIL',
@@ -55,20 +64,20 @@ if not User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists():
     )
     print('Superuser created successfully!')
 "
-else
-    log "Superuser already exists, updating password..."
-    python manage.py shell -c "
+
+# Verify superuser was created/updated
+log "Verifying superuser..."
+python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
 user = User.objects.get(username='$DJANGO_SUPERUSER_USERNAME')
-user.set_password('$DJANGO_SUPERUSER_PASSWORD')
-user.is_staff = True
-user.is_superuser = True
-user.is_active = True
-user.save()
-print('Superuser updated successfully!')
+print(f'Superuser verification:')
+print(f'Username: {user.username}')
+print(f'Email: {user.email}')
+print(f'Is staff: {user.is_staff}')
+print(f'Is superuser: {user.is_superuser}')
+print(f'Is active: {user.is_active}')
 "
-fi
 
 # Ensure static and media directories exist and have correct permissions
 log "Setting up static and media directories..."
