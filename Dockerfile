@@ -12,7 +12,6 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        nginx \
         postgresql-client \
         build-essential \
         libpq-dev \
@@ -27,12 +26,6 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 # Copy project
 COPY backend /app/
 
-# Copy Nginx configuration
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
-
-# Copy supervisord configuration
-COPY supervisord.conf /app/supervisord.conf
-
 # Create necessary directories and set permissions
 RUN mkdir -p /app/staticfiles /app/media \
     && chmod -R 755 /app/staticfiles /app/media
@@ -45,8 +38,8 @@ RUN useradd -m myuser \
     && chown -R myuser:myuser /app
 USER myuser
 
-# Expose ports
-EXPOSE 80 8000
+# Expose port
+EXPOSE 8000
 
 # Command to run on container start
-CMD ["gunicorn", "lynkledger_api.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"] 
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn lynkledger_api.wsgi:application --bind 0.0.0.0:8000 --workers 4"] 
