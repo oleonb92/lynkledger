@@ -22,6 +22,7 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
+from django.views.generic import RedirectView
 
 # API URLs
 api_patterns = [
@@ -42,11 +43,22 @@ def health_check(request):
     })
 
 urlpatterns = [
+    # Redirect root to admin
+    path('', RedirectView.as_view(url='/admin/', permanent=False)),
+    # Admin URLs
     path('admin/', admin.site.urls),
+    # API URLs
     path('api/v1/', include(api_patterns)),
     path('api/health-check/', health_check, name='health-check'),
 ]
 
-# Serve static and media files
-urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve static and media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # In production, serve static files through whitenoise
+    urlpatterns += [
+        path('static/<path:path>', RedirectView.as_view(url='/staticfiles/%(path)s')),
+        path('media/<path:path>', RedirectView.as_view(url='/media/%(path)s')),
+    ]
