@@ -238,15 +238,15 @@ STATICFILES_FINDERS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Security settings
+# Security settings - Desactivados temporalmente para depuración
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = False
 CSRF_COOKIE_SECURE = False
-SECURE_BROWSER_XSS_FILTER = True
-SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'DENY'
+SECURE_BROWSER_XSS_FILTER = False
+SECURE_CONTENT_TYPE_NOSNIFF = False
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
-# CSRF settings
+# CSRF settings - Configuración mínima
 CSRF_COOKIE_DOMAIN = None
 CSRF_COOKIE_SAMESITE = None
 CSRF_USE_SESSIONS = False
@@ -257,7 +257,7 @@ CSRF_COOKIE_PATH = '/'
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
 CSRF_COOKIE_AGE = 31449600  # 1 year in seconds
 
-# Session settings
+# Session settings - Configuración mínima
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_COOKIE_NAME = 'lynkledger_session'
@@ -316,7 +316,7 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@lynkledger.com')
 
-# Logging configuration
+# Logging configuration - Logging detallado
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -363,6 +363,11 @@ LOGGING = {
             'propagate': True,
         },
         'django.contrib.sessions': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.contrib.admin': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,
