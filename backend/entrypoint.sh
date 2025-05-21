@@ -29,24 +29,45 @@ python manage.py migrate --noinput || {
 }
 log "Migrations applied successfully"
 
-# Create superuser if it doesn't exist
-log "Checking for superuser..."
-if [ -z "$DJANGO_SUPERUSER_USERNAME" ] || [ -z "$DJANGO_SUPERUSER_EMAIL" ] || [ -z "$DJANGO_SUPERUSER_PASSWORD" ]; then
-    log "Error: DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL, and DJANGO_SUPERUSER_PASSWORD must be set"
-    exit 1
-fi
+# Set default superuser values if not provided
+DJANGO_SUPERUSER_USERNAME=${DJANGO_SUPERUSER_USERNAME:-"admin"}
+DJANGO_SUPERUSER_EMAIL=${DJANGO_SUPERUSER_EMAIL:-"admin@lynkledger.com"}
+DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD:-"admin123"}
+
+log "Using superuser credentials:"
+log "Username: $DJANGO_SUPERUSER_USERNAME"
+log "Email: $DJANGO_SUPERUSER_EMAIL"
 
 # Check if superuser exists
 if ! python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists()"; then
     log "Creating superuser..."
-    python manage.py createsuperuser --noinput \
-        --username $DJANGO_SUPERUSER_USERNAME \
-        --email $DJANGO_SUPERUSER_EMAIL
-    log "Superuser created successfully!"
+    python manage.py shell -c "
+from django.contrib.auth import get_user_model
+User = get_user_model()
+if not User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists():
+    User.objects.create_superuser(
+        username='$DJANGO_SUPERUSER_USERNAME',
+        email='$DJANGO_SUPERUSER_EMAIL',
+        password='$DJANGO_SUPERUSER_PASSWORD',
+        is_staff=True,
+        is_superuser=True,
+        is_active=True
+    )
+    print('Superuser created successfully!')
+"
 else
     log "Superuser already exists, updating password..."
-    python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); user = User.objects.get(username='$DJANGO_SUPERUSER_USERNAME'); user.set_password('$DJANGO_SUPERUSER_PASSWORD'); user.save()"
-    log "Superuser password updated!"
+    python manage.py shell -c "
+from django.contrib.auth import get_user_model
+User = get_user_model()
+user = User.objects.get(username='$DJANGO_SUPERUSER_USERNAME')
+user.set_password('$DJANGO_SUPERUSER_PASSWORD')
+user.is_staff = True
+user.is_superuser = True
+user.is_active = True
+user.save()
+print('Superuser updated successfully!')
+"
 fi
 
 # Ensure static and media directories exist and have correct permissions
