@@ -25,6 +25,7 @@ from rest_framework.permissions import AllowAny
 from django.views.generic import RedirectView
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import TemplateView
+from django.contrib.auth.views import LoginView
 
 # API URLs
 api_patterns = [
@@ -44,12 +45,13 @@ def health_check(request):
         'message': 'Backend API is running'
     })
 
-class AdminLoginView(TemplateView):
+class AdminLoginView(LoginView):
     template_name = 'admin/login.html'
-
-    @ensure_csrf_cookie
+    
     def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
+        response.set_cookie('csrftoken', request.META.get('CSRF_COOKIE', ''))
+        return response
 
 urlpatterns = [
     # Redirect root to admin
