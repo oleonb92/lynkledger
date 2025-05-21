@@ -255,6 +255,7 @@ CSRF_COOKIE_NAME = 'lynkledger_csrf'
 CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
 CSRF_COOKIE_PATH = '/'
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
+CSRF_COOKIE_AGE = 31449600  # 1 year in seconds
 
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
@@ -264,6 +265,7 @@ SESSION_COOKIE_DOMAIN = None
 SESSION_COOKIE_SAMESITE = None
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_PATH = '/'
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 # Authentication settings
 AUTHENTICATION_BACKENDS = [
@@ -351,6 +353,16 @@ LOGGING = {
             'propagate': True,
         },
         'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.contrib.auth': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.contrib.sessions': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,
