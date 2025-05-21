@@ -244,18 +244,18 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
 # CSRF settings
-CSRF_COOKIE_DOMAIN = '.onrender.com'
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_USE_SESSIONS = True
-CSRF_COOKIE_HTTPONLY = False  # Must be False for AJAX requests
+CSRF_COOKIE_DOMAIN = None
+CSRF_COOKIE_SAMESITE = None
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_COOKIE_NAME = 'lynkledger_csrf'
 
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_COOKIE_NAME = 'lynkledger_session'
-SESSION_COOKIE_DOMAIN = '.onrender.com'
-SESSION_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_NAME = 'lynkledger_csrf'
+SESSION_COOKIE_DOMAIN = None
+SESSION_COOKIE_SAMESITE = None
 
 # Authentication settings
 AUTHENTICATION_BACKENDS = [
