@@ -26,9 +26,9 @@ from django.views.generic import RedirectView
 
 # API URLs
 api_patterns = [
-    path('users/', include('users.urls')),
-    path('', include('organizations.urls')),
-    path('accounting/', include('accounting.urls')),
+    path('users/', include('users.urls', namespace='users')),
+    path('', include('organizations.urls', namespace='organizations')),
+    path('accounting/', include('accounting.urls', namespace='accounting')),
 ]
 
 @api_view(['GET'])
@@ -44,11 +44,11 @@ def health_check(request):
 
 urlpatterns = [
     # Redirect root to admin
-    path('', RedirectView.as_view(url='/admin/', permanent=False)),
+    path('', RedirectView.as_view(url='/admin/', permanent=False), name='home'),
     # Admin URLs
-    path('admin/', admin.site.urls),
+    path('admin/', admin.site.urls, name='admin'),
     # API URLs
-    path('api/v1/', include(api_patterns)),
+    path('api/v1/', include((api_patterns, 'api'), namespace='api')),
     path('api/health-check/', health_check, name='health-check'),
 ]
 
@@ -59,6 +59,6 @@ if settings.DEBUG:
 else:
     # In production, serve static files through whitenoise
     urlpatterns += [
-        path('static/<path:path>', RedirectView.as_view(url='/staticfiles/%(path)s')),
-        path('media/<path:path>', RedirectView.as_view(url='/media/%(path)s')),
+        path('static/<path:path>', RedirectView.as_view(url='/staticfiles/%(path)s'), name='static'),
+        path('media/<path:path>', RedirectView.as_view(url='/media/%(path)s'), name='media'),
     ]
