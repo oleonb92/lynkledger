@@ -253,6 +253,8 @@ CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_NAME = 'lynkledger_csrf'
 CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
+CSRF_COOKIE_PATH = '/'
+CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
 
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
@@ -261,6 +263,7 @@ SESSION_COOKIE_NAME = 'lynkledger_session'
 SESSION_COOKIE_DOMAIN = None
 SESSION_COOKIE_SAMESITE = None
 SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_PATH = '/'
 
 # Authentication settings
 AUTHENTICATION_BACKENDS = [
@@ -315,24 +318,41 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@lynkledger.co
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
         },
     },
     'root': {
         'handlers': ['console'],
-        'level': 'DEBUG',  # Cambiado a DEBUG para ver más información
+        'level': 'DEBUG',
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'DEBUG',  # Cambiado a DEBUG para ver más información
+            'level': 'DEBUG',
             'propagate': True,
         },
         'django.security': {
             'handlers': ['console'],
-            'level': 'DEBUG',  # Cambiado a DEBUG para ver más información
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
             'propagate': True,
         },
     },
