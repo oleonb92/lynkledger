@@ -1,7 +1,22 @@
-FROM nginx:alpine
+FROM nginx:1.25-alpine
 
-COPY default.conf /etc/nginx/conf.d/default.conf
+# Remove default nginx configuration
+RUN rm /etc/nginx/conf.d/default.conf
 
-EXPOSE 80
+# Copy custom nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
 
+# Create SSL directory
+RUN mkdir -p /etc/nginx/ssl
+
+# Create static and media directories
+RUN mkdir -p /usr/share/nginx/html/static /usr/share/nginx/html/media
+
+# Set permissions
+RUN chown -R nginx:nginx /usr/share/nginx/html
+
+# Expose ports
+EXPOSE 80 443
+
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

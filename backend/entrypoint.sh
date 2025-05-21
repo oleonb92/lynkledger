@@ -16,10 +16,10 @@ while ! nc -z $DB_HOST $DB_PORT; do
         log "Error: Database connection timeout"
         exit 1
     fi
-    sleep 1
+    sleep 0.1
     timeout=$((timeout-1))
 done
-log "Database is ready!"
+log "Database is up!"
 
 # Apply database migrations with error handling
 log "Applying database migrations..."
@@ -30,65 +30,24 @@ python manage.py migrate --noinput || {
 log "Migrations applied successfully"
 
 # Create superuser if it doesn't exist
-log "Creating superuser..."
-python manage.py shell -c "
-from django.contrib.auth import get_user_model;
-from django.db import connection;
-from django.db.utils import OperationalError;
-import sys;
+log "Checking for superuser..."
+if [ -z "$DJANGO_SUPERUSER_USERNAME" ] || [ -z "$DJANGO_SUPERUSER_EMAIL" ] || [ -z "$DJANGO_SUPERUSER_PASSWORD" ]; then
+    log "Error: DJANGO_SUPERUSER_USERNAME, DJANGO_SUPERUSER_EMAIL, and DJANGO_SUPERUSER_PASSWORD must be set"
+    exit 1
+fi
 
-User = get_user_model();
-try:
-    # Test database connection
-    with connection.cursor() as cursor:
-        cursor.execute('SELECT 1')
-        log('Database connection successful')
-    
-    # Check if superuser exists
-    if not User.objects.filter(username='admin').exists():
-        log('Creating new superuser...')
-        user = User.objects.create_superuser(
-            username='admin',
-            email='osmanileon92@gmail.com',
-            password='Natali@rca1992'
-        )
-        log('Superuser created successfully')
-        log(f'Username: {user.username}')
-        log(f'Email: {user.email}')
-        log(f'Is staff: {user.is_staff}')
-        log(f'Is superuser: {user.is_superuser}')
-        log(f'Is active: {user.is_active}')
-        
-        # Verify user can be retrieved
-        user = User.objects.get(username='admin')
-        log('Superuser verification successful')
-        log(f'Can authenticate: {user.check_password(\"Natali@rca1992\")}')
-    else:
-        user = User.objects.get(username='admin')
-        log('Superuser already exists')
-        log(f'Username: {user.username}')
-        log(f'Email: {user.email}')
-        log(f'Is staff: {user.is_staff}')
-        log(f'Is superuser: {user.is_superuser}')
-        log(f'Is active: {user.is_active}')
-        
-        # Verify password
-        if not user.check_password('Natali@rca1992'):
-            log('Updating superuser password...')
-            user.set_password('Natali@rca1992')
-            user.save()
-            log('Password updated successfully')
-            log(f'Can authenticate: {user.check_password(\"Natali@rca1992\")}')
-        else:
-            log('Password is correct')
-            log(f'Can authenticate: {user.check_password(\"Natali@rca1992\")}')
-except Exception as e:
-    log(f'Error: {str(e)}')
-    log(f'Error type: {type(e).__name__}')
-    import traceback
-    log(f'Traceback: {traceback.format_exc()}')
-    sys.exit(1)
-"
+# Check if superuser exists
+if ! python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.filter(username='$DJANGO_SUPERUSER_USERNAME').exists()"; then
+    log "Creating superuser..."
+    python manage.py createsuperuser --noinput \
+        --username $DJANGO_SUPERUSER_USERNAME \
+        --email $DJANGO_SUPERUSER_EMAIL
+    log "Superuser created successfully!"
+else
+    log "Superuser already exists, updating password..."
+    python manage.py shell -c "from django.contrib.auth import get_user_model; User = get_user_model(); user = User.objects.get(username='$DJANGO_SUPERUSER_USERNAME'); user.set_password('$DJANGO_SUPERUSER_PASSWORD'); user.save()"
+    log "Superuser password updated!"
+fi
 
 # Ensure static and media directories exist and have correct permissions
 log "Setting up static and media directories..."
@@ -110,5 +69,9 @@ ls -la /app/staticfiles/admin/css/ || {
     log "Error: Static files verification failed"
     exit 1
 }
+
+# Start server
+log "Starting server..."
+gunicorn lynkledger_api.wsgi:application --bind 0.0.0.0:8000
 
 log "Setup completed successfully" 

@@ -2,6 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path
 
 
 def main():
@@ -15,6 +16,11 @@ def main():
             "available on your PYTHONPATH environment variable? Did you "
             "forget to activate a virtual environment?"
         ) from exc
+    
+    # Add the project root directory to the Python path
+    project_root = Path(__file__).resolve().parent
+    sys.path.append(str(project_root))
+    
     execute_from_command_line(sys.argv)
 
 

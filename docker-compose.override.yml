@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   web:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
@@ -22,7 +24,9 @@ services:
       - redis
 
   worker:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
     command: celery -A lynkledger_api worker -l info
     volumes:
       - ./backend:/app
@@ -37,7 +41,9 @@ services:
       - redis
 
   beat:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
     command: celery -A lynkledger_api beat -l info
     volumes:
       - ./backend:/app
@@ -71,7 +77,4 @@ services:
 
 volumes:
   postgres_data:
-  redis_data:
-  static_files:
-  media_files:
-  frontend_build: 
+  redis_data: 

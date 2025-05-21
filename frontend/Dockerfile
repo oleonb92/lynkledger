@@ -1,21 +1,32 @@
-FROM node:18-alpine
+# Build stage
+FROM node:18-alpine as build
 
+# Set work directory
 WORKDIR /app
 
-# Instalar dependencias globales necesarias
-RUN npm install -g npm@latest
-
-# Copiar solo los archivos necesarios para la instalación de dependencias
+# Copy package files
 COPY package*.json ./
 
-# Instalar dependencias con flags para optimizar
-RUN npm ci --only=production --no-audit --no-optional
+# Install dependencies
+RUN npm install
 
-# Copiar el resto de los archivos
+# Copy project files
 COPY . .
 
-# Exponer el puerto
-EXPOSE 3000
+# Build project
+RUN npm run build
 
-# Comando para iniciar la aplicación
-CMD ["npm", "start"]
+# Production stage
+FROM nginx:1.25-alpine
+
+# Copy build files from build stage
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port
+EXPOSE 80
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]

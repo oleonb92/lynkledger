@@ -1,6 +1,142 @@
-# Lynkledger
+# LynkLedger
 
-Sistema de gestión financiera y contabilidad empresarial moderno y eficiente.
+LynkLedger is a comprehensive accounting and financial management system built with Django and React.
+
+## Features
+
+- User authentication and authorization
+- Organization management
+- Accounting and financial tracking
+- Real-time notifications
+- Email notifications
+- API documentation with Swagger/ReDoc
+- Celery for background tasks
+- Redis for caching and session management
+
+## Prerequisites
+
+- Python 3.8+
+- PostgreSQL
+- Redis
+- Node.js 14+
+- npm or yarn
+
+## Environment Variables
+
+Create a `.env` file in the `backend` directory with the following variables:
+
+```env
+# Django settings
+DEBUG=False
+SECRET_KEY=your-secret-key-here
+ALLOWED_HOSTS=localhost,127.0.0.1,*.onrender.com
+CSRF_TRUSTED_ORIGINS=https://*.onrender.com
+
+# Database settings
+DATABASE_URL=postgres://user:password@host:port/dbname
+
+# Redis settings
+REDIS_URL=redis://user:password@host:port
+
+# Email settings
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+
+# Admin settings
+DJANGO_SUPERUSER_USERNAME=admin
+DJANGO_SUPERUSER_EMAIL=admin@example.com
+DJANGO_SUPERUSER_PASSWORD=your-secure-password
+
+# Security settings
+SECURE_SSL_REDIRECT=True
+SESSION_COOKIE_SECURE=True
+CSRF_COOKIE_SECURE=True
+```
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/oleonb92/lynkledger.git
+cd lynkledger
+```
+
+2. Set up the backend:
+```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+```
+
+3. Set up the frontend:
+```bash
+cd frontend
+npm install
+npm start
+```
+
+## Development
+
+### Backend
+
+- Run tests: `python manage.py test`
+- Create migrations: `python manage.py makemigrations`
+- Apply migrations: `python manage.py migrate`
+- Start Celery worker: `celery -A lynkledger_api worker -l info`
+- Start Celery beat: `celery -A lynkledger_api beat -l info`
+
+### Frontend
+
+- Run tests: `npm test`
+- Build for production: `npm run build`
+- Start development server: `npm start`
+
+## Deployment
+
+### Backend (Render)
+
+1. Create a new Web Service on Render
+2. Connect your GitHub repository
+3. Set the following:
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn lynkledger_api.wsgi:application --bind 0.0.0.0:8000`
+4. Add environment variables from `.env.example`
+5. Deploy
+
+### Frontend (Vercel)
+
+1. Create a new project on Vercel
+2. Connect your GitHub repository
+3. Set the following:
+   - Framework Preset: Create React App
+   - Build Command: `npm run build`
+   - Output Directory: `build`
+4. Add environment variables
+5. Deploy
+
+## API Documentation
+
+- Swagger UI: `/swagger/`
+- ReDoc: `/redoc/`
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add some amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Descripción
 
