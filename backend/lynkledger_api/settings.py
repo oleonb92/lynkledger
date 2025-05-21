@@ -103,9 +103,9 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -246,19 +246,21 @@ SECURE_CONTENT_TYPE_NOSNIFF = False
 X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # CSRF settings
-CSRF_COOKIE_DOMAIN = None
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_USE_SESSIONS = True
+CSRF_COOKIE_DOMAIN = '.onrender.com'
+CSRF_COOKIE_SAMESITE = None
+CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_NAME = 'csrftoken'
 CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'
+CSRF_COOKIE_PATH = '/'
+CSRF_COOKIE_AGE = 31449600  # 1 year in seconds
 
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_COOKIE_NAME = 'sessionid'
-SESSION_COOKIE_DOMAIN = None
-SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_DOMAIN = '.onrender.com'
+SESSION_COOKIE_SAMESITE = None
 SESSION_SAVE_EVERY_REQUEST = True
 SESSION_COOKIE_PATH = '/'
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
