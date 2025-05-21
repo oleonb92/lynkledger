@@ -18,47 +18,37 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.http import JsonResponse
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
 from django.views.generic import RedirectView
+from django.http import HttpResponse
 
-# API URLs
-api_patterns = [
-    path('users/', include(('users.urls', 'users'))),
-    path('', include(('organizations.urls', 'organizations'))),
-    path('accounting/', include(('accounting.urls', 'accounting'))),
-]
-
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def health_check(request):
-    """
-    A public endpoint to check if the API is running
-    """
-    return Response({
-        'status': 'healthy',
-        'message': 'Backend API is running'
-    })
+schema_view = get_schema_view(
+    openapi.Info(
+        title="LynkLedger API",
+        default_version='v1',
+        description="API documentation for LynkLedger",
+        terms_of_service="https://www.lynkledger.com/terms/",
+        contact=openapi.Contact(email="contact@lynkledger.com"),
+        license=openapi.License(name="BSD License"),
+    ),
+    public=True,
+    permission_classes=(permissions.AllowAny,),
+)
 
 urlpatterns = [
-    # Redirect root to admin
-    path('', RedirectView.as_view(url='/admin/', permanent=False), name='home'),
-    # Admin URLs
-    path('admin/', admin.site.urls, name='admin'),
-    # API URLs
-    path('api/v1/', include((api_patterns, 'api'))),
-    path('api/health-check/', health_check, name='health-check'),
+    path('', RedirectView.as_view(url='/admin/', permanent=True)),
+    path('admin/', admin.site.urls),
+    path('api/users/', include('users.urls')),
+    path('api/organizations/', include('organizations.urls')),
+    path('api/accounting/', include('accounting.urls')),
+    path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('api/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('health/', lambda request: HttpResponse("OK"), name='health_check'),
 ]
 
-# Serve static and media files in development
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-else:
-    # In production, serve static files through whitenoise
-    urlpatterns += [
-        path('static/<path:path>', RedirectView.as_view(url='/staticfiles/%(path)s'), name='static'),
-        path('media/<path:path>', RedirectView.as_view(url='/media/%(path)s'), name='media'),
-    ]
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -159,3 +159,66 @@ docker compose exec frontend npm test
 ## Licencia
 
 [Tipo de Licencia] - ver archivo LICENSE.md para más detalles 
+
+
+Despliegue en Producción con Render
+Lynkledger está diseñado para ejecutarse en Render, una plataforma de alojamiento moderna que se encarga automáticamente del aprovisionamiento, construcción y despliegue de los servicios.
+
+Objetivo de Render
+El objetivo principal es que Render maneje la mayor parte de la infraestructura, incluyendo:
+
+Construcción automática de imágenes Docker desde el repositorio.
+
+Ejecución y escalado automático de los contenedores.
+
+Servir el frontend (React) y el backend (Django) desde una misma instancia.
+
+Recolección de archivos estáticos (collectstatic) en cada despliegue.
+
+Supervisión, logs y reinicios automáticos de servicios.
+
+Mínima dependencia de recursos locales (tu computadora no necesita ejecutar nada pesado).
+
+Requisitos en Render
+Conecta tu repositorio de GitHub a Render.
+
+Crea un servicio Web (Web Service) con Dockerfile personalizado.
+
+Configura las variables de entorno desde el panel de Render, en vez de usar .env local.
+
+Asegúrate de que tu entrypoint.sh:
+
+Ejecute migraciones (migrate)
+
+Cree el superusuario si no existe
+
+Recoja archivos estáticos (collectstatic)
+
+Arranque Gunicorn y el servidor
+
+Buenas Prácticas
+Render detecta automáticamente la apertura del puerto 8000, asegúrate de no hardcodear localhost.
+
+Los archivos estáticos deben servirse desde el backend o configurarse para servir directamente desde Nginx si se usa como reverse proxy.
+
+Usa la rama main para despliegues automáticos (o configura otra rama como producción).
+
+Asegúrate de que todos los servicios estén definidos correctamente en tu Dockerfile, docker-compose, y default.conf.
+
+Render Enviroments:
+ALLOWED_HOSTS=lynkledger-backend.onrender.com
+CSRF_TRUSTED_ORIGINS=https://lynkledger-backend.onrender.com
+CORS_ALLOWED_ORIGINS=https://lynkledger-frontend.onrender.com
+DATABASE_URL=postgresql://lynkledger_db_user:BKKEiSlvmpWwrydtigpNZFtcGYv8ZvVy@dpg-d0lrdummcj7s7388t2tg-a/lynkledger_db
+DEBUG=False
+DJANGO_SETTINGS_MODULE=lynkledger_api.settings
+MEDIA_ROOT=/app/media
+MEDIA_URL=/media/
+SECRET_KEY=<nueva_clave_generada>
+SITE_URL=https://lynkledger-backend.onrender.com
+STATIC_ROOT=/app/staticfiles
+STATIC_URL=/static/
+REDIS_HOST=redis
+REDIS_PORT=6379
+CELERY_BROKER_URL=redis://redis:6379/0
+CELERY_RESULT_BACKEND=redis://redis:6379/0
