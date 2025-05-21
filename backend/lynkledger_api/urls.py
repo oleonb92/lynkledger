@@ -23,10 +23,6 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.views.generic import RedirectView
-from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.generic import TemplateView
-from django.contrib.auth.views import LoginView
-from django.utils.translation import gettext_lazy as _
 
 # API URLs
 api_patterns = [
@@ -46,31 +42,10 @@ def health_check(request):
         'message': 'Backend API is running'
     })
 
-class AdminLoginView(LoginView):
-    template_name = 'admin/login.html'
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context.update({
-            'title': _('Log in'),
-            'subtitle': None,
-            'site_title': _('LynkLedger Admin'),
-            'site_header': _('LynkLedger Administration'),
-            'has_permission': True,
-            'app_path': self.request.path,
-        })
-        return context
-    
-    def get(self, request, *args, **kwargs):
-        response = super().get(request, *args, **kwargs)
-        response.set_cookie('csrftoken', request.META.get('CSRF_COOKIE', ''))
-        return response
-
 urlpatterns = [
     # Redirect root to admin
     path('', RedirectView.as_view(url='/admin/', permanent=False)),
     # Admin URLs
-    path('admin/login/', AdminLoginView.as_view(), name='admin_login'),
     path('admin/', admin.site.urls),
     # API URLs
     path('api/v1/', include(api_patterns)),
