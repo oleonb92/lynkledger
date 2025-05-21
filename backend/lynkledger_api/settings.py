@@ -137,7 +137,7 @@ CHANNEL_LAYERS = {
 
 import dj_database_url
 
-DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://lynkledger_db_user:BKKEiSlvmpWwrydtigpNZFtcGYv8ZvVy@dpg-d0lrdummcj7s7388t2tg-a.oregon-postgres.render.com/lynkledger_db')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 DATABASES = {
     'default': dj_database_url.config(

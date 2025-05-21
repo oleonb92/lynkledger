@@ -345,7 +345,7 @@ Render Enviroments:
 ALLOWED_HOSTS=lynkledger-backend.onrender.com
 CSRF_TRUSTED_ORIGINS=https://lynkledger-backend.onrender.com
 CORS_ALLOWED_ORIGINS=https://lynkledger-frontend.onrender.com
-DATABASE_URL=postgresql://lynkledger_db_user:BKKEiSlvmpWwrydtigpNZFtcGYv8ZvVy@dpg-d0lrdummcj7s7388t2tg-a/lynkledger_db
+DATABASE_URL=postgresql://user:password@host:port/dbname
 DEBUG=False
 DJANGO_SETTINGS_MODULE=lynkledger_api.settings
 MEDIA_ROOT=/app/media
