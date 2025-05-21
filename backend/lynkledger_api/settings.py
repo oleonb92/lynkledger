@@ -25,12 +25,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-@9yu83i=h@c3z#*r*c(me)wmi%c8k)tr$65@ii1w9k3ah8b)at')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = True  # Cambiado a True temporalmente para depuración
 
 ALLOWED_HOSTS = [
     'lynkledger-backend.onrender.com',
     'localhost',
-    '127.0.0.1'
+    '127.0.0.1',
+    '*',  # Agregado temporalmente para depuración
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
@@ -67,6 +68,8 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     'https://lynkledger-backend.onrender.com',
     'http://lynkledger-backend.onrender.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
 ]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -236,9 +239,9 @@ STATICFILES_FINDERS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Security settings
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SECURE_SSL_REDIRECT = False  # Desactivado temporalmente para depuración
+SESSION_COOKIE_SECURE = False  # Desactivado temporalmente para depuración
+CSRF_COOKIE_SECURE = False  # Desactivado temporalmente para depuración
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
@@ -249,6 +252,7 @@ CSRF_COOKIE_SAMESITE = None
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_NAME = 'lynkledger_csrf'
+CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'  # Vista por defecto para errores CSRF
 
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
