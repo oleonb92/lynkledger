@@ -112,7 +112,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django.middleware.locale.LocaleMiddleware',  # For internationalization
+    'django.middleware.locale.LocaleMiddleware',
 ]
 
 ROOT_URLCONF = 'lynkledger_api.urls'
@@ -239,9 +239,9 @@ STATICFILES_FINDERS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Security settings
-SECURE_SSL_REDIRECT = False  # Desactivado temporalmente para depuración
-SESSION_COOKIE_SECURE = False  # Desactivado temporalmente para depuración
-CSRF_COOKIE_SECURE = False  # Desactivado temporalmente para depuración
+SECURE_SSL_REDIRECT = False
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
@@ -252,7 +252,7 @@ CSRF_COOKIE_SAMESITE = None
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_NAME = 'lynkledger_csrf'
-CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'  # Vista por defecto para errores CSRF
+CSRF_FAILURE_VIEW = 'django.views.csrf.csrf_failure'
 
 # Session settings
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
@@ -260,6 +260,7 @@ SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_COOKIE_NAME = 'lynkledger_session'
 SESSION_COOKIE_DOMAIN = None
 SESSION_COOKIE_SAMESITE = None
+SESSION_SAVE_EVERY_REQUEST = True
 
 # Authentication settings
 AUTHENTICATION_BACKENDS = [
@@ -321,7 +322,19 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'INFO',
+        'level': 'DEBUG',  # Cambiado a DEBUG para ver más información
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Cambiado a DEBUG para ver más información
+            'propagate': True,
+        },
+        'django.security': {
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Cambiado a DEBUG para ver más información
+            'propagate': True,
+        },
     },
 }
 
