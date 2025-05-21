@@ -34,11 +34,15 @@ log "Creating superuser..."
 python manage.py shell -c "
 from django.contrib.auth import get_user_model;
 from django.db import connection;
+from django.db.utils import OperationalError;
+import sys;
+
 User = get_user_model();
 try:
     # Test database connection
     with connection.cursor() as cursor:
         cursor.execute('SELECT 1')
+        log('Database connection successful')
     
     # Check if superuser exists
     if not User.objects.filter(username='admin').exists():
@@ -53,6 +57,12 @@ try:
         log(f'Email: {user.email}')
         log(f'Is staff: {user.is_staff}')
         log(f'Is superuser: {user.is_superuser}')
+        log(f'Is active: {user.is_active}')
+        
+        # Verify user can be retrieved
+        user = User.objects.get(username='admin')
+        log('Superuser verification successful')
+        log(f'Can authenticate: {user.check_password(\"Natali@rca1992\")}')
     else:
         user = User.objects.get(username='admin')
         log('Superuser already exists')
@@ -60,6 +70,7 @@ try:
         log(f'Email: {user.email}')
         log(f'Is staff: {user.is_staff}')
         log(f'Is superuser: {user.is_superuser}')
+        log(f'Is active: {user.is_active}')
         
         # Verify password
         if not user.check_password('Natali@rca1992'):
@@ -67,9 +78,16 @@ try:
             user.set_password('Natali@rca1992')
             user.save()
             log('Password updated successfully')
+            log(f'Can authenticate: {user.check_password(\"Natali@rca1992\")}')
+        else:
+            log('Password is correct')
+            log(f'Can authenticate: {user.check_password(\"Natali@rca1992\")}')
 except Exception as e:
-    log(f'Error creating superuser: {str(e)}')
-    raise
+    log(f'Error: {str(e)}')
+    log(f'Error type: {type(e).__name__}')
+    import traceback
+    log(f'Traceback: {traceback.format_exc()}')
+    sys.exit(1)
 "
 
 # Ensure static and media directories exist and have correct permissions
