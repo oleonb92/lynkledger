@@ -74,12 +74,10 @@ except Exception as e:
 
 # Ensure static and media directories exist and have correct permissions
 log "Setting up static and media directories..."
-mkdir -p staticfiles
-mkdir -p static
-mkdir -p media
-chmod -R 755 staticfiles
-chmod -R 755 static
-chmod -R 755 media
+mkdir -p /app/staticfiles
+mkdir -p /app/media
+chmod -R 755 /app/staticfiles
+chmod -R 755 /app/media
 
 # Collect static files with verbose output
 log "Collecting static files..."
@@ -90,7 +88,7 @@ python manage.py collectstatic --noinput --clear -v 2 || {
 
 # Verify static files
 log "Verifying static files..."
-ls -la staticfiles/admin/css/ || {
+ls -la /app/staticfiles/admin/css/ || {
     log "Error: Static files verification failed"
     exit 1
 }
