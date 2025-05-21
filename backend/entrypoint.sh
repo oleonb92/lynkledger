@@ -16,11 +16,27 @@ echo "Creating superuser..."
 python manage.py shell -c "
 from django.contrib.auth import get_user_model;
 User = get_user_model();
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'osmanileon92@gmail.com', 'Natali@rca1992')
-    print('Superuser created successfully')
-else:
-    print('Superuser already exists')
+try:
+    if not User.objects.filter(username='admin').exists():
+        user = User.objects.create_superuser(
+            username='admin',
+            email='osmanileon92@gmail.com',
+            password='Natali@rca1992'
+        )
+        print('Superuser created successfully')
+        print(f'Username: {user.username}')
+        print(f'Email: {user.email}')
+        print(f'Is staff: {user.is_staff}')
+        print(f'Is superuser: {user.is_superuser}')
+    else:
+        user = User.objects.get(username='admin')
+        print('Superuser already exists')
+        print(f'Username: {user.username}')
+        print(f'Email: {user.email}')
+        print(f'Is staff: {user.is_staff}')
+        print(f'Is superuser: {user.is_superuser}')
+except Exception as e:
+    print(f'Error creating superuser: {str(e)}')
 "
 
 # Ensure static and media directories exist and have correct permissions
