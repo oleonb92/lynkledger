@@ -21,13 +21,20 @@ import api from '../../services/api/axios';
 import { RegisterFormValues } from '../../types/auth';
 
 const glassStyle = {
-  background: 'rgba(36, 40, 47, 0.7)',
-  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-  backdropFilter: 'blur(8px)',
-  WebkitBackdropFilter: 'blur(8px)',
-  borderRadius: 20,
-  border: '1px solid rgba(255, 255, 255, 0.18)',
-  padding: '2.5rem 2rem',
+  background: 'rgba(36, 40, 47, 0.85)',
+  boxShadow: '0 4px 24px 0 rgba(0,0,0,0.12)',
+  backdropFilter: 'blur(6px)',
+  WebkitBackdropFilter: 'blur(6px)',
+  borderRadius: 28,
+  border: '1px solid rgba(255,255,255,0.10)',
+  padding: '3.5rem 2.5rem 3rem 2.5rem',
+  maxWidth: 420,
+  minHeight: 600,
+  margin: '0 auto',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
 };
 
 const Register = () => {
@@ -64,12 +71,17 @@ const Register = () => {
           confirm_password: values.confirmPassword,
           first_name: values.firstName,
           last_name: values.lastName,
+          phone_number: '',  // Optional field
+          language: 'en',    // Default language
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,  // User's timezone
+          account_type: 'individual',  // Default account type
+          organization_name: values.organizationName  // Required field for organization creation
         });
         navigate('/login', {
           state: { message: 'Registro exitoso. Por favor inicia sesión.' },
         });
       } catch (error: any) {
-        setStatus(error.message || 'Error al registrar usuario');
+        setStatus(error.response?.data?.detail || error.message || 'Error al registrar usuario');
       } finally {
         setLoading(false);
       }
@@ -82,10 +94,10 @@ const Register = () => {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        style={{ width: '100%', maxWidth: 420 }}
+        style={{ width: '100%' }}
       >
         <Box sx={glassStyle}>
-          <Typography component="h1" variant="h4" sx={{ mb: 3, fontWeight: 700, letterSpacing: 1, color: '#fff' }}>
+          <Typography component="h1" variant="h5" sx={{ mb: 4, fontWeight: 700, letterSpacing: 1, color: '#fff', textAlign: 'center', wordBreak: 'break-word', maxWidth: '100%' }}>
             Create Account
           </Typography>
           <form onSubmit={formik.handleSubmit} autoComplete="off">

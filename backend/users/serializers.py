@@ -4,18 +4,20 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from .models import Role
+from organizations.models import Organization, OrganizationMembership
 
 User = get_user_model()
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     confirm_password = serializers.CharField(write_only=True)
+    organization_name = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'password', 'confirm_password',
                  'first_name', 'last_name', 'phone_number', 'language',
-                 'timezone', 'account_type')
+                 'timezone', 'account_type', 'organization_name')
         extra_kwargs = {
             'email': {'required': True},
             'username': {'required': True},
@@ -27,8 +29,34 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
+        # Remove organization_name from user data
+        organization_name = validated_data.pop('organization_name')
         validated_data.pop('confirm_password')
+        
+        # Create user
         user = User.objects.create_user(**validated_data)
+        
+        # Create organization
+        organization = Organization.objects.create(
+            name=organization_name,
+            slug=organization_name.lower().replace(' ', '-'),
+            owner=user,
+            organization_type='business'  # Default type
+        )
+        
+        # Create organization membership for the owner
+        OrganizationMembership.objects.create(
+            organization=organization,
+            user=user,
+            role='owner',
+            can_manage_members=True,
+            can_manage_settings=True,
+            can_manage_billing=True,
+            can_view_reports=True,
+            can_create_transactions=True,
+            can_approve_transactions=True
+        )
+        
         return user
 
 class UserProfileSerializer(serializers.ModelSerializer):
