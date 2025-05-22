@@ -15,6 +15,7 @@ from .serializers import (
     OrganizationMembershipSerializer,
     OrganizationInvitationSerializer
 )
+from django.core.mail import send_mail
 
 # Create your views here.
 
@@ -62,7 +63,15 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         invitation = serializer.save()
         
-        # TODO: Send invitation email
+        # Enviar email de invitación
+        invite_link = f"https://lynkledger-frontend.vercel.app/accept-invite/{invitation.token}"
+        send_mail(
+            subject=f"Invitación a unirse a {organization.name} en LynkLedger",
+            message=f"Hola! Has sido invitado a unirte a la organización '{organization.name}' como {invitation.role}.\n\nHaz click en el siguiente enlace para aceptar la invitación:\n{invite_link}\n\nEste enlace expirará el {invitation.expires_at.strftime('%Y-%m-%d %H:%M')}.",
+            from_email=None,
+            recipient_list=[invitation.email],
+            fail_silently=False,
+        )
         
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
