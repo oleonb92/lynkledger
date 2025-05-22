@@ -40,42 +40,6 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
-    def invite(self, request, pk=None):
-        organization = self.get_object()
-        
-        # Check if user has permission to invite
-        membership = get_object_or_404(
-            OrganizationMembership,
-            organization=organization,
-            user=request.user
-        )
-        if not (membership.role in ['owner', 'admin'] or membership.can_manage_members):
-            return Response(
-                {'detail': _("You don't have permission to invite members")},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
-        serializer = OrganizationInvitationSerializer(data={
-            **request.data,
-            'organization': organization.id,
-            'invited_by': request.user.id
-        })
-        serializer.is_valid(raise_exception=True)
-        invitation = serializer.save()
-        
-        # Enviar email de invitación
-        invite_link = f"https://lynkledger-frontend.vercel.app/accept-invite/{invitation.token}"
-        send_mail(
-            subject=f"Invitación a unirse a {organization.name} en LynkLedger",
-            message=f"Hola! Has sido invitado a unirte a la organización '{organization.name}' como {invitation.role}.\n\nHaz click en el siguiente enlace para aceptar la invitación:\n{invite_link}\n\nEste enlace expirará el {invitation.expires_at.strftime('%Y-%m-%d %H:%M')}.",
-            from_email=None,
-            recipient_list=[invitation.email],
-            fail_silently=False,
-        )
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @action(detail=True, methods=['post'])
     def transfer_ownership(self, request, pk=None):
         organization = self.get_object()
         
@@ -251,6 +215,38 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
               organization__memberships__can_manage_members=True) |
             Q(email=self.request.user.email)
         ).distinct()
+
+    def create(self, request, *args, **kwargs):
+        # Validar permisos
+        organization_id = request.data.get('organization')
+        organization = get_object_or_404(Organization, id=organization_id)
+        membership = get_object_or_404(
+            OrganizationMembership,
+            organization=organization,
+            user=request.user
+        )
+        if not (membership.role in ['owner', 'admin'] or membership.can_manage_members):
+            return Response(
+                {'detail': _("You don't have permission to invite members")},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Crear invitación
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        invitation = serializer.save(invited_by=request.user)
+
+        # Enviar email de invitación
+        invite_link = f"https://lynkledger-frontend.vercel.app/accept-invite/{invitation.token}"
+        send_mail(
+            subject=f"Invitación a unirse a {organization.name} en LynkLedger",
+            message=f"Hola! Has sido invitado a unirte a la organización '{organization.name}' como {invitation.role}.\n\nHaz click en el siguiente enlace para aceptar la invitación:\n{invite_link}\n\nEste enlace expirará el {invitation.expires_at.strftime('%Y-%m-%d %H:%M')}.",
+            from_email=None,
+            recipient_list=[invitation.email],
+            fail_silently=False,
+        )
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):

@@ -10,7 +10,7 @@ export const getOrganizationInvitations = () =>
 
 // Invitar miembro
 export const inviteMember = (orgId: string | number, data: { email: string; role: string; message?: string }) =>
-  api.post(`/organizations/${orgId}/invite`, data);
+  api.post('/invitations', { ...data, organization: orgId });
 
 // Cambiar rol de miembro
 export const updateMemberRole = (membershipId: string | number, role: string) =>
