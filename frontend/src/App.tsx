@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { store } from './store';
@@ -15,16 +16,25 @@ import Dashboard from './pages/dashboard/Dashboard';
 import Accounts from './pages/accounting/Accounts';
 import Transactions from './pages/accounting/Transactions';
 import Reports from './pages/accounting/Reports';
+import Profile from './pages/Profile';
 
 // Components
 import PrivateRoute from './components/auth/PrivateRoute';
 
+function RouteLogger() {
+  const location = useLocation();
+  console.log("Current location:", location.pathname);
+  return null;
+}
+
 function App() {
+  console.log("App loaded");
   return (
     <Provider store={store}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Router>
+          <RouteLogger />
           <Routes>
             {/* Rutas públicas */}
             <Route element={<AuthLayout />}>
@@ -40,6 +50,7 @@ function App() {
                 <Route path="/accounts" element={<Accounts />} />
                 <Route path="/transactions" element={<Transactions />} />
                 <Route path="/reports" element={<Reports />} />
+                <Route path="/profile" element={<Profile />} />
               </Route>
             </Route>
           </Routes>

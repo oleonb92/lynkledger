@@ -63,25 +63,54 @@ const Register = () => {
     }),
     onSubmit: async (values, { setStatus }) => {
       setLoading(true);
+      const requestData = {
+        username: values.email,
+        email: values.email,
+        password: values.password,
+        confirm_password: values.confirmPassword,
+        first_name: values.firstName,
+        last_name: values.lastName,
+        phone_number: '',
+        language: 'en',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        account_type: 'personal',
+        organization_name: values.organizationName
+      };
+      
+      console.log('Sending registration data:', requestData);
+      
       try {
-        await api.post('/register/', {
-          username: values.email,
-          email: values.email,
-          password: values.password,
-          confirm_password: values.confirmPassword,
-          first_name: values.firstName,
-          last_name: values.lastName,
-          phone_number: '',  // Optional field
-          language: 'en',    // Default language
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,  // User's timezone
-          account_type: 'individual',  // Default account type
-          organization_name: values.organizationName  // Required field for organization creation
-        });
+        const response = await api.post('/register/', requestData);
+        console.log('Registration response:', response.data);
         navigate('/login', {
           state: { message: 'Registro exitoso. Por favor inicia sesión.' },
         });
       } catch (error: any) {
-        setStatus(error.response?.data?.detail || error.message || 'Error al registrar usuario');
+        let errorMessage = 'Error al registrar usuario';
+        if (error.response?.data) {
+          if (typeof error.response.data === 'object') {
+            // Personaliza los mensajes más comunes
+            const customMessages: Record<string, string> = {
+              "user with this email already exists.": "Ya existe una cuenta registrada con este correo electrónico.",
+              "A user with that username already exists.": "Ya existe una cuenta registrada con este correo electrónico.",
+              "Passwords don't match": "Las contraseñas no coinciden.",
+            };
+            errorMessage = Object.entries(error.response.data)
+              .map(([field, messages]) => {
+                const msgArr = Array.isArray(messages) ? messages : [messages];
+                return msgArr
+                  .map(msg => customMessages[msg] || `${field}: ${msg}`)
+                  .join(' | ');
+              })
+              .join(' | ');
+          } else {
+            errorMessage = error.response.data.detail || error.response.data.message || error.response.data.error || error.message;
+          }
+        } else {
+          errorMessage = error.message;
+        }
+        console.error('Registration error details:', error.response?.data);
+        setStatus(errorMessage);
       } finally {
         setLoading(false);
       }

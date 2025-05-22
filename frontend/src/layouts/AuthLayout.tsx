@@ -1,5 +1,6 @@
+import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
-import { Container, Box, Paper } from '@mui/material';
+import { Box } from '@mui/material';
 import { useAppSelector } from '../store';
 
 const AuthLayout = () => {
@@ -10,29 +11,11 @@ const AuthLayout = () => {
   }
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Paper
-          elevation={3}
-          sx={{
-            padding: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: '100%',
-          }}
-        >
-          <Outlet />
-        </Paper>
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(120deg, #181c22 0%, #232a34 100%)' }}>
+      <Box sx={{ width: '100%', maxWidth: 420, mx: 'auto' }}>
+        <Outlet />
       </Box>
-    </Container>
+    </Box>
   );
 };
 

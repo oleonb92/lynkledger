@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import {
@@ -14,6 +15,8 @@ import {
   ListItemText,
   useTheme,
   useMediaQuery,
+  Button,
+  Divider,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -23,18 +26,22 @@ import {
   Assessment,
   Person,
   Settings,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useAppSelector } from '../store';
+import { useAppSelector, useAppDispatch } from '../store';
+import { logout } from '../store/slices/authSlice';
 
 const drawerWidth = 240;
 
 const MainLayout = () => {
+  console.log("MainLayout rendered");
   const [mobileOpen, setMobileOpen] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
   const { user } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -72,6 +79,36 @@ const MainLayout = () => {
             <ListItemText primary={item.text} />
           </ListItem>
         ))}
+        <Divider sx={{ my: 2, background: 'rgba(255,255,255,0.10)' }} />
+        <ListItem
+          button
+          onClick={() => {
+            dispatch(logout());
+            window.location.href = '/login';
+          }}
+          sx={{
+            background: 'rgba(255, 0, 0, 0.08)',
+            borderRadius: 2,
+            '&:hover': {
+              background: 'rgba(255, 0, 0, 0.18)',
+            },
+            mt: 1,
+          }}
+        >
+          <ListItemIcon>
+            <LogoutIcon sx={{ color: '#ff1744', fontSize: 28 }} />
+          </ListItemIcon>
+          <ListItemText
+            primary="Cerrar sesión"
+            primaryTypographyProps={{
+              sx: {
+                color: '#ff1744',
+                fontWeight: 700,
+                letterSpacing: 0.5,
+              },
+            }}
+          />
+        </ListItem>
       </List>
     </div>
   );

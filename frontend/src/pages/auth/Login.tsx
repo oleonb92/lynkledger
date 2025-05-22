@@ -22,13 +22,20 @@ import { LoginFormValues } from '../../types/auth';
 import { motion } from 'framer-motion';
 
 const glassStyle = {
-  background: 'rgba(36, 40, 47, 0.7)',
-  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-  backdropFilter: 'blur(8px)',
-  WebkitBackdropFilter: 'blur(8px)',
-  borderRadius: 20,
-  border: '1px solid rgba(255, 255, 255, 0.18)',
-  padding: '2.5rem 2rem',
+  background: 'rgba(36, 40, 47, 0.85)',
+  boxShadow: '0 4px 24px 0 rgba(0,0,0,0.12)',
+  backdropFilter: 'blur(6px)',
+  WebkitBackdropFilter: 'blur(6px)',
+  borderRadius: 28,
+  border: '1px solid rgba(255,255,255,0.10)',
+  padding: '3.5rem 2.5rem 3rem 2.5rem',
+  maxWidth: 420,
+  minHeight: 520,
+  margin: '0 auto',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
 };
 
 const Login = () => {
@@ -51,18 +58,48 @@ const Login = () => {
       setLoading(true);
       try {
         dispatch(loginStart());
+        // 1. Obtener tokens
         const response = await api.post('/token/', {
           username: values.email,
           password: values.password,
         });
         const { access, refresh } = response.data;
+        console.log('Tokens recibidos:', { access, refresh });
+        
+        // 2. Obtener información del usuario
+        const userResponse = await api.get('/users/me/', {
+          headers: {
+            Authorization: `Bearer ${access}`
+          }
+        });
+        
+        const userData = userResponse.data;
+        console.log('Datos del usuario recibidos:', userData);
+        
+        // 3. Guardar tokens y datos del usuario
         localStorage.setItem('token', access);
         localStorage.setItem('refreshToken', refresh);
-        dispatch(loginSuccess({ user: {}, token: access }));
+        
+        const userToStore = {
+          id: userData.id,
+          email: userData.email,
+          firstName: userData.first_name,
+          lastName: userData.last_name,
+          organizationId: userData.organization_id,
+        };
+        console.log('Usuario a guardar en Redux:', userToStore);
+        
+        dispatch(loginSuccess({
+          user: userToStore,
+          token: access,
+          refreshToken: refresh,
+        }));
         navigate('/dashboard');
       } catch (error: any) {
-        setStatus(error.message || 'Error al iniciar sesión');
-        dispatch(loginFailure(error.message || 'Error al iniciar sesión'));
+        console.error('Login error:', error);
+        console.error('Error response:', error.response);
+        setStatus(error.response?.data?.detail || error.message || 'Error al iniciar sesión');
+        dispatch(loginFailure(error.response?.data?.detail || error.message || 'Error al iniciar sesión'));
       } finally {
         setLoading(false);
       }
@@ -75,10 +112,10 @@ const Login = () => {
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: 'easeOut' }}
-        style={{ width: '100%', maxWidth: 420 }}
+        style={{ width: '100%' }}
       >
         <Box sx={glassStyle}>
-          <Typography component="h1" variant="h4" sx={{ mb: 3, fontWeight: 700, letterSpacing: 1, color: '#fff' }}>
+          <Typography component="h1" variant="h5" sx={{ mb: 4, fontWeight: 700, letterSpacing: 1, color: '#fff', textAlign: 'center', wordBreak: 'break-word', maxWidth: '100%' }}>
             Welcome Back
           </Typography>
           <form onSubmit={formik.handleSubmit} autoComplete="off">
