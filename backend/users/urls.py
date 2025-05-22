@@ -9,7 +9,8 @@ from .views import (
     RegisterView,
     ProfileView,
     ChangePasswordView,
-    RoleViewSet
+    RoleViewSet,
+    UserMeView
 )
 
 # Create a router and register our viewsets with it.
@@ -31,4 +32,5 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('change-password/', ChangePasswordView.as_view(), name='change_password'),
+    path('me/', UserMeView.as_view(), name='user-me'),
 ] 

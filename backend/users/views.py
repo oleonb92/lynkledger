@@ -14,7 +14,8 @@ from .serializers import (
     UserProfileSerializer,
     ChangePasswordSerializer,
     RoleSerializer,
-    PermissionSerializer
+    PermissionSerializer,
+    UserMeSerializer
 )
 
 User = get_user_model()
@@ -171,4 +172,15 @@ class RoleViewSet(viewsets.ModelViewSet):
         # Remove permissions
         role.permissions.remove(*permissions)
         serializer = self.get_serializer(role)
+        return Response(serializer.data)
+
+class UserMeView(APIView):
+    """
+    get:
+    Return the current authenticated user's data.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserMeSerializer(request.user)
         return Response(serializer.data)

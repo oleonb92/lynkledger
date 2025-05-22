@@ -143,3 +143,16 @@ class RoleSerializer(serializers.ModelSerializer):
             instance.permissions.set(permissions)
         
         return instance 
+
+class UserMeSerializer(serializers.ModelSerializer):
+    organization_id = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'organization_id']
+
+    def get_organization_id(self, obj):
+        membership = OrganizationMembership.objects.filter(user=obj).first()
+        if membership:
+            return membership.organization.id
+        return None 
