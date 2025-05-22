@@ -11,20 +11,31 @@ import {
   IconButton,
   InputAdornment,
   Grid,
+  CircularProgress,
+  Link as MuiLink,
+  useTheme,
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { motion } from 'framer-motion';
 import api from '../../services/api/axios';
-import { RegisterFormValues, RegisterResponse } from '../../types/auth';
+import { RegisterFormValues } from '../../types/auth';
 
-interface OrganizationResponse {
-  id: number;
-  name: string;
-}
+const glassStyle = {
+  background: 'rgba(36, 40, 47, 0.7)',
+  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+  backdropFilter: 'blur(8px)',
+  WebkitBackdropFilter: 'blur(8px)',
+  borderRadius: 20,
+  border: '1px solid rgba(255, 255, 255, 0.18)',
+  padding: '2.5rem 2rem',
+};
 
 const Register = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const theme = useTheme();
 
   const formik = useFormik<RegisterFormValues>({
     initialValues: {
@@ -36,191 +47,220 @@ const Register = () => {
       organizationName: '',
     },
     validationSchema: Yup.object({
-      firstName: Yup.string()
-        .required('El nombre es requerido'),
-      lastName: Yup.string()
-        .required('El apellido es requerido'),
-      email: Yup.string()
-        .email('Correo electrónico inválido')
-        .required('El correo electrónico es requerido'),
-      password: Yup.string()
-        .min(8, 'La contraseña debe tener al menos 8 caracteres')
-        .required('La contraseña es requerida'),
-      confirmPassword: Yup.string()
-        .oneOf([Yup.ref('password')], 'Las contraseñas deben coincidir')
-        .required('Confirma tu contraseña'),
-      organizationName: Yup.string()
-        .required('El nombre de la organización es requerido'),
+      firstName: Yup.string().required('El nombre es requerido'),
+      lastName: Yup.string().required('El apellido es requerido'),
+      email: Yup.string().email('Correo electrónico inválido').required('El correo electrónico es requerido'),
+      password: Yup.string().min(8, 'La contraseña debe tener al menos 8 caracteres').required('La contraseña es requerida'),
+      confirmPassword: Yup.string().oneOf([Yup.ref('password')], 'Las contraseñas deben coincidir').required('Confirma tu contraseña'),
+      organizationName: Yup.string().required('El nombre de la organización es requerido'),
     }),
-    onSubmit: async (values: RegisterFormValues) => {
+    onSubmit: async (values, { setStatus }) => {
+      setLoading(true);
       try {
-        // Primero creamos la organización
-        const orgResponse = await api.post<OrganizationResponse>('/organizations/', {
-          name: values.organizationName,
-        });
-
-        // Luego registramos al usuario
-        const userResponse = await api.post<RegisterResponse>('/auth/register/', {
-          firstName: values.firstName,
-          lastName: values.lastName,
+        await api.post('/register/', {
+          username: values.email,
           email: values.email,
           password: values.password,
-          organizationId: orgResponse.data.id,
+          confirm_password: values.confirmPassword,
+          first_name: values.firstName,
+          last_name: values.lastName,
         });
-
-        // Si todo sale bien, redirigimos al login
-        navigate('/login', { 
-          state: { 
-            message: 'Registro exitoso. Por favor inicia sesión.' 
-          } 
+        navigate('/login', {
+          state: { message: 'Registro exitoso. Por favor inicia sesión.' },
         });
       } catch (error: any) {
-        formik.setStatus(error.message || 'Error al registrar usuario');
+        setStatus(error.message || 'Error al registrar usuario');
+      } finally {
+        setLoading(false);
       }
     },
   });
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', textAlign: 'center' }}>
-      <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
-        Registro
-      </Typography>
+    <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: theme.palette.background.default }}>
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+        style={{ width: '100%', maxWidth: 420 }}
+      >
+        <Box sx={glassStyle}>
+          <Typography component="h1" variant="h4" sx={{ mb: 3, fontWeight: 700, letterSpacing: 1, color: '#fff' }}>
+            Create Account
+          </Typography>
+          <form onSubmit={formik.handleSubmit} autoComplete="off">
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  id="firstName"
+                  name="firstName"
+                  label="Name"
+                  value={formik.values.firstName}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.firstName && Boolean(formik.errors.firstName)}
+                  helperText={formik.touched.firstName && formik.errors.firstName}
+                  variant="filled"
+                  InputProps={{ style: { background: 'rgba(255,255,255,0.04)' } }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  id="lastName"
+                  name="lastName"
+                  label="Last name"
+                  value={formik.values.lastName}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.lastName && Boolean(formik.errors.lastName)}
+                  helperText={formik.touched.lastName && formik.errors.lastName}
+                  variant="filled"
+                  InputProps={{ style: { background: 'rgba(255,255,255,0.04)' } }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="email"
+                  name="email"
+                  label="Email"
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.email && Boolean(formik.errors.email)}
+                  helperText={formik.touched.email && formik.errors.email}
+                  variant="filled"
+                  InputProps={{ style: { background: 'rgba(255,255,255,0.04)' } }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="organizationName"
+                  name="organizationName"
+                  label="Name of the Organization"
+                  value={formik.values.organizationName}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.organizationName && Boolean(formik.errors.organizationName)}
+                  helperText={formik.touched.organizationName && formik.errors.organizationName}
+                  variant="filled"
+                  InputProps={{ style: { background: 'rgba(255,255,255,0.04)' } }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="password"
+                  name="password"
+                  label="Password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.password && Boolean(formik.errors.password)}
+                  helperText={formik.touched.password && formik.errors.password}
+                  variant="filled"
+                  InputProps={{
+                    style: { background: 'rgba(255,255,255,0.04)' },
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          sx={{ color: '#b0b3b8' }}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  label="Confirm Password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formik.values.confirmPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.confirmPassword && Boolean(formik.errors.confirmPassword)}
+                  helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
+                  variant="filled"
+                  InputProps={{
+                    style: { background: 'rgba(255,255,255,0.04)' },
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          edge="end"
+                          sx={{ color: '#b0b3b8' }}
+                        >
+                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+            </Grid>
 
-      <form onSubmit={formik.handleSubmit}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6}>
-            <TextField
+            {formik.status && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {formik.status}
+              </Alert>
+            )}
+
+            <Button
+              type="submit"
               fullWidth
-              id="firstName"
-              name="firstName"
-              label="Nombre"
-              value={formik.values.firstName}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.firstName && Boolean(formik.errors.firstName)}
-              helperText={formik.touched.firstName && formik.errors.firstName}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              id="lastName"
-              name="lastName"
-              label="Apellido"
-              value={formik.values.lastName}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.lastName && Boolean(formik.errors.lastName)}
-              helperText={formik.touched.lastName && formik.errors.lastName}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              id="email"
-              name="email"
-              label="Correo Electrónico"
-              value={formik.values.email}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.email && Boolean(formik.errors.email)}
-              helperText={formik.touched.email && formik.errors.email}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              id="organizationName"
-              name="organizationName"
-              label="Nombre de la Organización"
-              value={formik.values.organizationName}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.organizationName && Boolean(formik.errors.organizationName)}
-              helperText={formik.touched.organizationName && formik.errors.organizationName}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              id="password"
-              name="password"
-              label="Contraseña"
-              type={showPassword ? 'text' : 'password'}
-              value={formik.values.password}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.password && Boolean(formik.errors.password)}
-              helperText={formik.touched.password && formik.errors.password}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={() => setShowPassword(!showPassword)}
-                      edge="end"
-                    >
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              variant="contained"
+              sx={{
+                mt: 3,
+                mb: 2,
+                py: 1.5,
+                fontWeight: 700,
+                fontSize: '1.1rem',
+                background: 'linear-gradient(90deg, #00bcd4 0%, #2196f3 100%)',
+                boxShadow: '0 2px 8px 0 rgba(0,188,212,0.15)',
+                transition: 'transform 0.2s',
+                '&:hover': {
+                  background: 'linear-gradient(90deg, #2196f3 0%, #00bcd4 100%)',
+                  transform: 'scale(1.03)',
+                },
               }}
-            />
-          </Grid>
-          <Grid item xs={12}>
-            <TextField
-              fullWidth
-              id="confirmPassword"
-              name="confirmPassword"
-              label="Confirmar Contraseña"
-              type={showConfirmPassword ? 'text' : 'password'}
-              value={formik.values.confirmPassword}
-              onChange={formik.handleChange}
-              onBlur={formik.handleBlur}
-              error={formik.touched.confirmPassword && Boolean(formik.errors.confirmPassword)}
-              helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton
-                      aria-label="toggle password visibility"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      edge="end"
-                    >
-                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
+              disabled={formik.isSubmitting || loading}
+              endIcon={loading && <CircularProgress size={22} sx={{ color: '#fff' }} />}
+            >
+              {loading ? 'Registering...' : 'Register'}
+            </Button>
+
+            <MuiLink
+              component="button"
+              onClick={() => navigate('/login')}
+              sx={{
+                display: 'block',
+                mt: 2,
+                color: '#00bcd4',
+                fontWeight: 500,
+                fontSize: '1rem',
+                textDecoration: 'underline',
+                transition: 'color 0.2s',
+                '&:hover': { color: '#ff4081' },
               }}
-            />
-          </Grid>
-        </Grid>
-
-        {formik.status && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {formik.status}
-          </Alert>
-        )}
-
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, mb: 2 }}
-          disabled={formik.isSubmitting}
-        >
-          {formik.isSubmitting ? 'Registrando...' : 'Registrarse'}
-        </Button>
-
-        <Button
-          fullWidth
-          variant="text"
-          onClick={() => navigate('/login')}
-          sx={{ mt: 1 }}
-        >
-          ¿Ya tienes una cuenta? Inicia sesión
-        </Button>
-      </form>
+            >
+              Already have an account? Sign in
+            </MuiLink>
+          </form>
+        </Box>
+      </motion.div>
     </Box>
   );
 };
