@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 from .models import Organization, OrganizationMembership, OrganizationInvitation
+from datetime import timedelta
+from django.utils import timezone
 
 class OrganizationSerializer(serializers.ModelSerializer):
     member_count = serializers.IntegerField(source='get_member_count', read_only=True)
@@ -97,4 +99,9 @@ class OrganizationInvitationSerializer(serializers.ModelSerializer):
                 _("There is already a pending invitation for this email")
             )
 
-        return data 
+        return data
+
+    def create(self, validated_data):
+        if 'expires_at' not in validated_data or not validated_data['expires_at']:
+            validated_data['expires_at'] = timezone.now() + timedelta(hours=24)
+        return super().create(validated_data) 
