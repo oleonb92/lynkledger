@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Grid, Typography, Avatar, Button, TextField, Chip, Snackbar, CircularProgress } from '@mui/material';
-import { getOrganizationMembers, getOrganizationInvitations, inviteMember } from '../services/api/organization';
+import { getOrganizationMembers, getOrganizationInvitations, inviteMember, cancelInvitation, resendInvitation } from '../services/api/organization';
 import CardContainer from '../components/common/CardContainer';
 import { useAppSelector } from '../store';
 // import { motion } from 'framer-motion';
@@ -83,6 +83,30 @@ const Profile: React.FC = () => {
     }
   };
 
+  // Handler para reenviar invitación
+  const handleResend = async (invitation: any) => {
+    try {
+      await resendInvitation(invitation.id);
+      setSnackbar({ open: true, message: 'Invitación reenviada', severity: 'success' });
+      const invitationsRes = await getOrganizationInvitations();
+      setInvitations(invitationsRes.data);
+    } catch (err: any) {
+      setSnackbar({ open: true, message: 'Error al reenviar invitación', severity: 'error' });
+    }
+  };
+
+  // Handler para cancelar invitación
+  const handleCancel = async (invitationId: number) => {
+    try {
+      await cancelInvitation(invitationId);
+      setSnackbar({ open: true, message: 'Invitación cancelada', severity: 'success' });
+      const invitationsRes = await getOrganizationInvitations();
+      setInvitations(invitationsRes.data);
+    } catch (err: any) {
+      setSnackbar({ open: true, message: 'Error al cancelar invitación', severity: 'error' });
+    }
+  };
+
   return (
     <Box sx={{ minHeight: '100vh', p: { xs: 2, md: 6 }, background: theme => theme.palette.background.default }}>
       <Grid container spacing={4} justifyContent="center" alignItems="flex-start">
@@ -139,8 +163,8 @@ const Profile: React.FC = () => {
                     <Box key={inv.id} display="flex" alignItems="center" gap={1} sx={{ background: 'rgba(255,255,255,0.04)', borderRadius: 2, p: 1.5 }}>
                       <Typography color="white">{inv.email}</Typography>
                       <Chip label={inv.status} color="warning" size="small" />
-                      <Button size="small" variant="text">Reenviar</Button>
-                      <Button size="small" variant="text" color="error">Cancelar</Button>
+                      <Button size="small" variant="text" onClick={() => handleResend(inv)} sx={{ color: '#00bcd4' }}>Reenviar</Button>
+                      <Button size="small" variant="text" color="error" onClick={() => handleCancel(inv.id)}>Cancelar</Button>
                     </Box>
                   ))}
                 </Box>

@@ -10,7 +10,7 @@ export const getOrganizationInvitations = () =>
 
 // Invitar miembro
 export const inviteMember = (orgId: string | number, data: { email: string; role: string; message?: string }) =>
-  api.post('/invitations', { ...data, organization: orgId });
+  api.post('/invitations/', { ...data, organization: orgId });
 
 // Cambiar rol de miembro
 export const updateMemberRole = (membershipId: string | number, role: string) =>
@@ -20,7 +20,10 @@ export const updateMemberRole = (membershipId: string | number, role: string) =>
 export const removeMember = (membershipId: string | number) =>
   api.delete(`/memberships/${membershipId}`);
 
-// Reenviar invitación (puedes reutilizar inviteMember con el mismo email)
+// Reenviar invitación
+export const resendInvitation = (invitationId: string | number) =>
+  api.post(`/invitations/${invitationId}/resend/`);
+
 // Cancelar invitación
 export const cancelInvitation = (invitationId: string | number) =>
   api.delete(`/invitations/${invitationId}`); 

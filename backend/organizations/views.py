@@ -249,6 +249,31 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
+    def resend(self, request, pk=None):
+        invitation = self.get_object()
+        if invitation.status != OrganizationInvitation.StatusChoices.PENDING:
+            return Response({'detail': _('Only pending invitations can be resent')}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Permisos: solo owner, admin o quien puede gestionar miembros
+        membership = OrganizationMembership.objects.filter(
+            organization=invitation.organization,
+            user=request.user
+        ).first()
+        if not (membership and (membership.role in ['owner', 'admin'] or membership.can_manage_members)):
+            return Response({'detail': _("You don't have permission to resend invitations")}, status=status.HTTP_403_FORBIDDEN)
+
+        # Reenviar email
+        invite_link = f"https://lynkledger-frontend.vercel.app/accept-invite/{invitation.token}"
+        send_mail(
+            subject=f"Invitación a unirse a {invitation.organization.name} en LynkLedger",
+            message=f"Hola! Has sido invitado a unirte a la organización '{invitation.organization.name}' como {invitation.role}.\n\nHaz click en el siguiente enlace para aceptar la invitación:\n{invite_link}\n\nEste enlace expirará el {invitation.expires_at.strftime('%Y-%m-%d %H:%M')}.",
+            from_email=None,
+            recipient_list=[invitation.email],
+            fail_silently=False,
+        )
+        return Response({'detail': _('Invitation resent successfully')}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         invitation = self.get_object()
         
