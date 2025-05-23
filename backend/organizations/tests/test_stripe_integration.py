@@ -24,12 +24,14 @@ class StripeIntegrationTests(TestCase):
         
         # Crear usuarios de prueba
         self.owner = User.objects.create_user(
+            username='owner',
             email='owner@test.com',
             password='testpass123',
             first_name='Owner',
             last_name='Test'
         )
         self.sponsor = User.objects.create_user(
+            username='sponsor',
             email='sponsor@test.com',
             password='testpass123',
             first_name='Sponsor',
