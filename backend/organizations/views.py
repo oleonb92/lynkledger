@@ -209,6 +209,7 @@ class OrganizationMembershipViewSet(viewsets.ModelViewSet):
 class OrganizationInvitationViewSet(viewsets.ModelViewSet):
     serializer_class = OrganizationInvitationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'token'
 
     def get_permissions(self):
         if self.action == 'retrieve':
