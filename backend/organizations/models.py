@@ -55,6 +55,9 @@ class Organization(models.Model):
         related_name='organizations',
         verbose_name=_('members')
     )
+    plan = models.CharField(_('plan'), max_length=32, default='free')
+    sponsor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='sponsored_organizations', verbose_name=_('sponsor'))
+    sponsor_type = models.CharField(_('sponsor type'), max_length=16, choices=[('accountant', 'Accountant'), ('client', 'Client')], default='client')
 
     class Meta:
         verbose_name = _('organization')
@@ -79,6 +82,11 @@ class Organization(models.Model):
             organization=self,
             user=user
         ).delete()
+
+    def transfer_sponsorship(self, new_sponsor, sponsor_type='client'):
+        self.sponsor = new_sponsor
+        self.sponsor_type = sponsor_type
+        self.save()
 
 class OrganizationMembership(models.Model):
     class RoleChoices(models.TextChoices):
@@ -128,6 +136,7 @@ class OrganizationMembership(models.Model):
     )
     invitation_accepted_at = models.DateTimeField(_('invitation accepted at'), null=True, blank=True)
     last_active_at = models.DateTimeField(_('last active at'), auto_now=True)
+    pro_features_for_accountant = models.BooleanField(_('pro features for accountant'), default=False)
 
     class Meta:
         verbose_name = _('organization membership')

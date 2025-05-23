@@ -8,6 +8,8 @@ class OrganizationSerializer(serializers.ModelSerializer):
     member_count = serializers.IntegerField(source='get_member_count', read_only=True)
     is_owner = serializers.SerializerMethodField()
     current_user_role = serializers.SerializerMethodField()
+    is_sponsor = serializers.SerializerMethodField()
+    can_start_subscription = serializers.SerializerMethodField()
 
     class Meta:
         model = Organization
@@ -16,7 +18,8 @@ class OrganizationSerializer(serializers.ModelSerializer):
             'logo', 'primary_color', 'email', 'phone', 'address',
             'website', 'fiscal_year_start', 'currency', 'tax_id',
             'created_at', 'updated_at', 'is_active', 'owner',
-            'member_count', 'is_owner', 'current_user_role'
+            'member_count', 'is_owner', 'current_user_role',
+            'is_sponsor', 'can_start_subscription'
         )
         read_only_fields = ('owner', 'created_at', 'updated_at')
 
@@ -38,6 +41,14 @@ class OrganizationSerializer(serializers.ModelSerializer):
             except OrganizationMembership.DoesNotExist:
                 return None
         return None
+
+    def get_is_sponsor(self, obj):
+        user = self.context.get('request').user
+        return obj.sponsor == user
+
+    def get_can_start_subscription(self, obj):
+        user = self.context.get('request').user
+        return obj.sponsor == user and obj.plan != 'pro'
 
 class OrganizationMembershipSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)

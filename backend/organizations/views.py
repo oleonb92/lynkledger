@@ -17,7 +17,10 @@ from .serializers import (
 )
 from django.core.mail import send_mail
 import os
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from .stripe_utils import create_stripe_customer
+import stripe
+from django.conf import settings
 
 # Create your views here.
 
@@ -179,6 +182,38 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         # TODO: Implement team creation logic
         
         return Response(status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def start_subscription(self, request, pk=None):
+        org = self.get_object()
+        user = request.user
+        if org.sponsor != user:
+            return Response({'detail': 'Solo el sponsor puede iniciar la suscripción.'}, status=403)
+        # Crea cliente en Stripe si no existe
+        customer_id = create_stripe_customer(user)
+        # Crea sesión de Stripe Checkout
+        session = stripe.checkout.Session.create(
+            customer=customer_id,
+            payment_method_types=['card'],
+            line_items=[{
+                'price': settings.STRIPE_PLAN_ID,  # Debes definir este ID en tus env vars
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=settings.FRONTEND_URL + '/billing/success?session_id={CHECKOUT_SESSION_ID}',
+            cancel_url=settings.FRONTEND_URL + '/billing/cancel',
+            metadata={'org_id': org.id},
+        )
+        return Response({'checkout_url': session.url})
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def transfer_sponsorship(self, request, pk=None):
+        org = self.get_object()
+        user = request.user
+        if org.owner != user:
+            return Response({'detail': 'Solo el owner puede transferir el sponsorship.'}, status=403)
+        org.transfer_sponsorship(new_sponsor=user, sponsor_type='client')
+        return Response({'detail': 'Sponsorship transferido correctamente.'})
 
 class OrganizationMembershipViewSet(viewsets.ModelViewSet):
     serializer_class = OrganizationMembershipSerializer
