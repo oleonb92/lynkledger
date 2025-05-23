@@ -5,6 +5,7 @@ from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from .models import Role
 from organizations.models import Organization, OrganizationMembership
+from django.utils.text import slugify
 
 User = get_user_model()
 
@@ -36,13 +37,27 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Create user
         user = User.objects.create_user(**validated_data)
         
-        # Create organization
-        organization = Organization.objects.create(
-            name=organization_name,
-            slug=organization_name.lower().replace(' ', '-'),
-            owner=user,
-            organization_type='business'  # Default type
-        )
+        # Generate unique slug for organization
+        base_slug = slugify(organization_name)
+        slug = base_slug
+        counter = 1
+        while Organization.objects.filter(slug=slug).exists():
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+        
+        try:
+            organization = Organization.objects.create(
+                name=organization_name,
+                slug=slug,
+                owner=user,
+                organization_type='business'  # Default type
+            )
+        except Exception as e:
+            # If organization creation fails, delete the user to avoid orphaned users
+            user.delete()
+            raise serializers.ValidationError({
+                'organization_name': _('An organization with this name already exists. Please choose another name.')
+            })
         
         # Create organization membership for the owner
         OrganizationMembership.objects.create(
