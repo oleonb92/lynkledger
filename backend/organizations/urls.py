@@ -5,6 +5,7 @@ from .views import (
     OrganizationMembershipViewSet,
     OrganizationInvitationViewSet
 )
+from .stripe_webhook import stripe_webhook
 
 app_name = 'organizations'
 
@@ -15,4 +16,5 @@ router.register(r'invitations', OrganizationInvitationViewSet, basename='invitat
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('stripe/webhook/', stripe_webhook, name='stripe-webhook'),
 ] 
