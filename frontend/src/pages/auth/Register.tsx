@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -43,6 +43,23 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null);
+  const [inviteOrgName, setInviteOrgName] = useState<string | null>(null);
+
+  // Sincronizar inviteEmail y inviteOrgName con localStorage al montar
+  useEffect(() => {
+    const email = localStorage.getItem('pendingInviteEmail');
+    if (email) {
+      setInviteEmail(email);
+      formik.setFieldValue('email', email);
+    }
+    const orgName = localStorage.getItem('pendingInviteOrgName');
+    if (orgName) {
+      setInviteOrgName(orgName);
+      formik.setFieldValue('organizationName', orgName);
+    }
+    // eslint-disable-next-line
+  }, []);
 
   const formik = useFormik<RegisterFormValues>({
     initialValues: {
@@ -82,9 +99,18 @@ const Register = () => {
       try {
         const response = await api.post('/register/', requestData);
         console.log('Registration response:', response.data);
-        navigate('/login', {
-          state: { message: 'Registro exitoso. Por favor inicia sesión.' },
-        });
+        // Redirección inteligente para invitación pendiente
+        const pendingToken = localStorage.getItem('pendingInviteToken');
+        if (pendingToken) {
+          localStorage.removeItem('pendingInviteToken');
+          localStorage.removeItem('pendingInviteEmail');
+          navigate(`/accept-invite/${pendingToken}`);
+        } else {
+          localStorage.removeItem('pendingInviteEmail');
+          navigate('/login', {
+            state: { message: 'Registro exitoso. Por favor inicia sesión.' },
+          });
+        }
       } catch (error: any) {
         let errorMessage = 'Error al registrar usuario';
         if (error.response?.data) {
@@ -167,13 +193,18 @@ const Register = () => {
                   id="email"
                   name="email"
                   label="Email"
-                  value={formik.values.email}
+                  value={inviteEmail !== null ? inviteEmail : formik.values.email}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   error={formik.touched.email && Boolean(formik.errors.email)}
                   helperText={formik.touched.email && formik.errors.email}
+                  margin="normal"
                   variant="filled"
-                  InputProps={{ style: { background: 'rgba(255,255,255,0.04)' } }}
+                  InputProps={{ 
+                    style: { background: 'rgba(255,255,255,0.04)' },
+                    readOnly: Boolean(inviteEmail),
+                    disabled: Boolean(inviteEmail)
+                  }}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -182,13 +213,17 @@ const Register = () => {
                   id="organizationName"
                   name="organizationName"
                   label="Name of the Organization"
-                  value={formik.values.organizationName}
+                  value={inviteOrgName !== null ? inviteOrgName : formik.values.organizationName}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   error={formik.touched.organizationName && Boolean(formik.errors.organizationName)}
                   helperText={formik.touched.organizationName && formik.errors.organizationName}
                   variant="filled"
-                  InputProps={{ style: { background: 'rgba(255,255,255,0.04)' } }}
+                  InputProps={{ 
+                    style: { background: 'rgba(255,255,255,0.04)' },
+                    readOnly: Boolean(inviteOrgName),
+                    disabled: Boolean(inviteOrgName)
+                  }}
                 />
               </Grid>
               <Grid item xs={12}>
