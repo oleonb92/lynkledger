@@ -16,6 +16,7 @@ from .serializers import (
     OrganizationInvitationSerializer
 )
 from django.core.mail import send_mail
+import os
 
 # Create your views here.
 
@@ -237,7 +238,8 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
         invitation = serializer.save(invited_by=request.user)
 
         # Enviar email de invitación
-        invite_link = f"https://lynkledger-frontend.vercel.app/accept-invite/{invitation.token}"
+        FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+        invite_link = f"{FRONTEND_URL}/accept-invite/{invitation.token}"
         send_mail(
             subject=f"Invitación a unirse a {organization.name} en LynkLedger",
             message=f"Hola! Has sido invitado a unirte a la organización '{organization.name}' como {invitation.role}.\n\nHaz click en el siguiente enlace para aceptar la invitación:\n{invite_link}\n\nEste enlace expirará el {invitation.expires_at.strftime('%Y-%m-%d %H:%M')}.",
@@ -263,7 +265,8 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
             return Response({'detail': _("You don't have permission to resend invitations")}, status=status.HTTP_403_FORBIDDEN)
 
         # Reenviar email
-        invite_link = f"https://lynkledger-frontend.vercel.app/accept-invite/{invitation.token}"
+        FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+        invite_link = f"{FRONTEND_URL}/accept-invite/{invitation.token}"
         send_mail(
             subject=f"Invitación a unirse a {invitation.organization.name} en LynkLedger",
             message=f"Hola! Has sido invitado a unirte a la organización '{invitation.organization.name}' como {invitation.role}.\n\nHaz click en el siguiente enlace para aceptar la invitación:\n{invite_link}\n\nEste enlace expirará el {invitation.expires_at.strftime('%Y-%m-%d %H:%M')}.",
