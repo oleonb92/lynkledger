@@ -17,6 +17,7 @@ from .serializers import (
 )
 from django.core.mail import send_mail
 import os
+from rest_framework.permissions import AllowAny
 
 # Create your views here.
 
@@ -208,6 +209,11 @@ class OrganizationMembershipViewSet(viewsets.ModelViewSet):
 class OrganizationInvitationViewSet(viewsets.ModelViewSet):
     serializer_class = OrganizationInvitationSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action == 'retrieve':
+            return [AllowAny()]
+        return super().get_permissions()
 
     def get_queryset(self):
         return OrganizationInvitation.objects.filter(
