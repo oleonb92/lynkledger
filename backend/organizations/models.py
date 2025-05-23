@@ -173,7 +173,7 @@ class OrganizationInvitation(models.Model):
         default=OrganizationMembership.RoleChoices.MEMBER
     )
     message = models.TextField(_('message'), blank=True)
-    token = models.UUIDField(_('token'), default=uuid.uuid4, unique=True)
+    token = models.CharField(_('token'), max_length=64, unique=True, default=uuid.uuid4, editable=False)
     status = models.CharField(
         _('status'),
         max_length=20,
