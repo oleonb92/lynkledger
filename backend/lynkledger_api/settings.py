@@ -372,3 +372,9 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
 }
+
+# Stripe settings
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET")
+STRIPE_PLAN_ID = os.environ.get("STRIPE_PLAN_ID", "price_xxx")  # Cambia "price_xxx" por el ID real de tu plan en Stripe
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
