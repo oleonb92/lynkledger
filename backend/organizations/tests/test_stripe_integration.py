@@ -1,4 +1,4 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -11,10 +11,16 @@ from unittest.mock import patch, MagicMock
 
 User = get_user_model()
 
+@override_settings(
+    STRIPE_SECRET_KEY='sk_test_mock',
+    STRIPE_WEBHOOK_SECRET='whsec_mock',
+    STRIPE_PLAN_ID='price_mock',
+    FRONTEND_URL='http://localhost:3000'
+)
 class StripeIntegrationTests(TestCase):
     def setUp(self):
         # Configurar Stripe en modo test
-        stripe.api_key = settings.STRIPE_SECRET_KEY
+        stripe.api_key = 'sk_test_mock'
         
         # Crear usuarios de prueba
         self.owner = User.objects.create_user(
@@ -56,8 +62,10 @@ class StripeIntegrationTests(TestCase):
         self.client.force_authenticate(user=self.sponsor)
 
     @patch('stripe.Customer.create')
-    def test_create_stripe_customer(self, mock_create):
+    @patch('stripe.checkout.Session.create')
+    def test_create_stripe_customer(self, mock_session_create, mock_create):
         mock_create.return_value = MagicMock(id='cus_test123')
+        mock_session_create.return_value = MagicMock(url='https://checkout.stripe.com/test')
         
         # Intentar iniciar suscripción
         url = reverse('organizations:organization-start-subscription', args=[self.organization.id])
@@ -66,6 +74,7 @@ class StripeIntegrationTests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('checkout_url', response.data)
         mock_create.assert_called_once()
+        mock_session_create.assert_called_once()
 
     def test_only_sponsor_can_start_subscription(self):
         # Intentar iniciar suscripción como owner (no sponsor)
