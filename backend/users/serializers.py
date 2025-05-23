@@ -4,8 +4,9 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from .models import Role
-from organizations.models import Organization, OrganizationMembership
+from organizations.models import Organization, OrganizationMembership, OrganizationInvitation
 from django.utils.text import slugify
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -30,49 +31,75 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        # Remove organization_name from user data
+        request = self.context.get('request', None)
+        invitation_token = None
+        if request:
+            invitation_token = request.data.get('invitation_token')
         organization_name = validated_data.pop('organization_name')
         validated_data.pop('confirm_password')
         
         # Create user
         user = User.objects.create_user(**validated_data)
         
-        # Generate unique slug for organization
-        base_slug = slugify(organization_name)
-        slug = base_slug
-        counter = 1
-        while Organization.objects.filter(slug=slug).exists():
-            slug = f"{base_slug}-{counter}"
-            counter += 1
-        
-        try:
-            organization = Organization.objects.create(
-                name=organization_name,
-                slug=slug,
-                owner=user,
-                organization_type='business'  # Default type
+        if invitation_token:
+            # Registro por invitación: asociar a la organización de la invitación
+            try:
+                invitation = OrganizationInvitation.objects.get(token=invitation_token, email=user.email, status=OrganizationInvitation.StatusChoices.PENDING)
+            except OrganizationInvitation.DoesNotExist:
+                user.delete()
+                raise serializers.ValidationError({'invitation_token': _('Invalid or expired invitation token.')})
+            # Asociar usuario a la organización
+            OrganizationMembership.objects.create(
+                organization=invitation.organization,
+                user=user,
+                role=invitation.role,
+                invited_by=invitation.invited_by,
+                invitation_accepted_at=timezone.now(),
+                can_manage_members=False,
+                can_manage_settings=False,
+                can_manage_billing=False,
+                can_view_reports=True,
+                can_create_transactions=True,
+                can_approve_transactions=False
             )
-        except Exception as e:
-            # If organization creation fails, delete the user to avoid orphaned users
-            user.delete()
-            raise serializers.ValidationError({
-                'organization_name': _('An organization with this name already exists. Please choose another name.')
-            })
-        
-        # Create organization membership for the owner
-        OrganizationMembership.objects.create(
-            organization=organization,
-            user=user,
-            role='owner',
-            can_manage_members=True,
-            can_manage_settings=True,
-            can_manage_billing=True,
-            can_view_reports=True,
-            can_create_transactions=True,
-            can_approve_transactions=True
-        )
-        
-        return user
+            # Marcar invitación como aceptada
+            invitation.accepted_at = timezone.now()
+            invitation.accepted_by = user
+            invitation.status = OrganizationInvitation.StatusChoices.ACCEPTED
+            invitation.save()
+            return user
+        else:
+            # Registro normal: crear organización
+            base_slug = slugify(organization_name)
+            slug = base_slug
+            counter = 1
+            while Organization.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            try:
+                organization = Organization.objects.create(
+                    name=organization_name,
+                    slug=slug,
+                    owner=user,
+                    organization_type='business'  # Default type
+                )
+            except Exception as e:
+                user.delete()
+                raise serializers.ValidationError({
+                    'organization_name': _('An organization with this name already exists. Please choose another name.')
+                })
+            OrganizationMembership.objects.create(
+                organization=organization,
+                user=user,
+                role='owner',
+                can_manage_members=True,
+                can_manage_settings=True,
+                can_manage_billing=True,
+                can_view_reports=True,
+                can_create_transactions=True,
+                can_approve_transactions=True
+            )
+            return user
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
