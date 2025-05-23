@@ -216,6 +216,8 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def get_queryset(self):
+        if getattr(self, 'action', None) == 'retrieve':
+            return OrganizationInvitation.objects.all()
         return OrganizationInvitation.objects.filter(
             Q(organization__owner=self.request.user) |
             Q(organization__memberships__user=self.request.user,
