@@ -2,8 +2,10 @@
 FROM python:3.11-slim as builder
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Set work directory
 WORKDIR /app
@@ -26,9 +28,10 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 FROM python:3.11-slim
 
 # Set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV DJANGO_SETTINGS_MODULE=lynkledger_api.settings
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=lynkledger_api.settings \
+    PATH="/home/appuser/.local/bin:$PATH"
 
 # Set work directory
 WORKDIR /app
@@ -39,26 +42,25 @@ RUN apt-get update \
         postgresql-client \
         libpq-dev \
         netcat-traditional \
+        curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -m -s /bin/bash appuser
 
 # Copy Python packages from builder
 COPY --from=builder /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
 COPY --from=builder /usr/local/bin/ /usr/local/bin/
 
 # Copy project
-COPY backend /app/
+COPY --chown=appuser:appuser backend /app/
 
 # Create necessary directories and set permissions
 RUN mkdir -p /app/staticfiles /app/media \
-    && chmod -R 755 /app/staticfiles /app/media
+    && chown -R appuser:appuser /app
 
-# Make entrypoint script executable
-RUN chmod +x /app/entrypoint.sh
-
-# Run as non-root user
-RUN useradd -m myuser \
-    && chown -R myuser:myuser /app
-USER myuser
+# Switch to non-root user
+USER appuser
 
 # Expose port
 EXPOSE 8000
@@ -68,4 +70,4 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health/ || exit 1
 
 # Command to run on container start
-CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn lynkledger_api.wsgi:application --bind 0.0.0.0:8000 --workers 4"] 
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn lynkledger_api.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2 --worker-class gthread --worker-tmp-dir /dev/shm --log-level info"] 
