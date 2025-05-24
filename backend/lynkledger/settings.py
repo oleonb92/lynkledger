@@ -144,11 +144,27 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'access-control-allow-origin',
+    'access-control-allow-credentials',
+    'access-control-allow-methods',
+    'access-control-allow-headers',
 ]
 
 # If DEBUG is True, allow all origins
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True
+
+# Additional CORS settings
+CORS_EXPOSE_HEADERS = [
+    'Content-Type',
+    'X-CSRFToken',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Allow-Credentials',
+    'Access-Control-Allow-Methods',
+    'Access-Control-Allow-Headers'
+]
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 
 INSTALLED_APPS = [
     'django.contrib.admin',
