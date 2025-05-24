@@ -37,7 +37,12 @@ def get_env_list(var_name):
     value = os.environ.get(var_name, '')
     return [v for v in value.split(',') if v.strip()]
 
-CORS_ALLOWED_ORIGINS = get_env_list('CORS_ALLOWED_ORIGINS')
+CORS_ALLOWED_ORIGINS = get_env_list('CORS_ALLOWED_ORIGINS') or [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+]
 CSRF_TRUSTED_ORIGINS = get_env_list('CSRF_TRUSTED_ORIGINS')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
