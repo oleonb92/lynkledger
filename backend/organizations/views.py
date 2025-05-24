@@ -25,10 +25,19 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.utils import timezone
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 # Create your views here.
 
 class OrganizationViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint para gestionar organizaciones.
+    
+    Permite crear, listar, actualizar y eliminar organizaciones.
+    También proporciona endpoints adicionales para gestionar membresías,
+    invitaciones y suscripciones.
+    """
     serializer_class = OrganizationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -41,6 +50,13 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    @swagger_auto_schema(
+        operation_description="Lista los miembros de una organización",
+        responses={
+            200: OrganizationMembershipSerializer(many=True),
+            404: "Organización no encontrada"
+        }
+    )
     @action(detail=True, methods=['get'])
     def members(self, request, pk=None):
         organization = self.get_object()
@@ -48,18 +64,31 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         serializer = OrganizationMembershipSerializer(memberships, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        operation_description="Transfiere la propiedad de la organización a otro miembro",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['new_owner_id'],
+            properties={
+                'new_owner_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID del nuevo propietario')
+            }
+        ),
+        responses={
+            200: "Propiedad transferida exitosamente",
+            403: "No tienes permiso para transferir la propiedad",
+            404: "Usuario no encontrado"
+        }
+    )
     @action(detail=True, methods=['post'])
     def transfer_ownership(self, request, pk=None):
         organization = self.get_object()
         
-        # Verify current user is the owner
         if organization.owner != request.user:
             return Response(
                 {'detail': _("Only the owner can transfer ownership")},
                 status=status.HTTP_403_FORBIDDEN
             )
         
-        # Get the new owner
         new_owner_id = request.data.get('new_owner_id')
         try:
             new_owner = organization.members.get(id=new_owner_id)
@@ -69,12 +98,10 @@ class OrganizationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Update ownership
         old_owner = organization.owner
         organization.owner = new_owner
         organization.save()
         
-        # Update memberships
         OrganizationMembership.objects.filter(
             organization=organization,
             user=new_owner
@@ -187,20 +214,34 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         
         return Response(status=status.HTTP_201_CREATED)
 
+    @swagger_auto_schema(
+        operation_description="Inicia el proceso de suscripción para una organización",
+        responses={
+            200: openapi.Response(
+                description="URL de checkout generada exitosamente",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'checkout_url': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            403: "No tienes permiso para iniciar la suscripción"
+        }
+    )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def start_subscription(self, request, pk=None):
         org = self.get_object()
         user = request.user
         if org.sponsor != user:
             return Response({'detail': 'Solo el sponsor puede iniciar la suscripción.'}, status=403)
-        # Crea cliente en Stripe si no existe
+        
         customer_id = create_stripe_customer(user)
-        # Crea sesión de Stripe Checkout
         session = stripe.checkout.Session.create(
             customer=customer_id,
             payment_method_types=['card'],
             line_items=[{
-                'price': settings.STRIPE_PLAN_ID,  # Debes definir este ID en tus env vars
+                'price': settings.STRIPE_PLAN_ID,
                 'quantity': 1,
             }],
             mode='subscription',
@@ -210,23 +251,46 @@ class OrganizationViewSet(viewsets.ModelViewSet):
         )
         return Response({'checkout_url': session.url})
 
+    @swagger_auto_schema(
+        operation_description="Transfiere el patrocinio de la organización a otro usuario",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['new_sponsor_id'],
+            properties={
+                'new_sponsor_id': openapi.Schema(type=openapi.TYPE_INTEGER, description='ID del nuevo sponsor'),
+                'sponsor_type': openapi.Schema(type=openapi.TYPE_STRING, description='Tipo de sponsor (accountant/client)')
+            }
+        ),
+        responses={
+            200: "Patrocinio transferido exitosamente",
+            403: "No tienes permiso para transferir el patrocinio",
+            404: "Usuario no encontrado"
+        }
+    )
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def transfer_sponsorship(self, request, pk=None):
         org = self.get_object()
         user = request.user
         new_sponsor_id = request.data.get('new_sponsor_id')
         sponsor_type = request.data.get('sponsor_type', 'client')
+        
         if org.owner != user:
             return Response({'detail': 'Solo el owner puede transferir el sponsorship.'}, status=403)
+        
         if not new_sponsor_id:
             return Response({'detail': 'Debes especificar el nuevo sponsor.'}, status=400)
+        
         try:
             new_sponsor = org.members.get(id=new_sponsor_id)
         except Exception:
             return Response({'detail': 'El nuevo sponsor debe ser miembro de la organización.'}, status=400)
+        
         org.transfer_sponsorship(new_sponsor=new_sponsor, sponsor_type=sponsor_type)
-        # (Opcional) Aquí puedes notificar al nuevo sponsor por email
-        return Response({'detail': 'Sponsorship transferido correctamente.', 'new_sponsor': new_sponsor.email, 'sponsor_type': sponsor_type})
+        return Response({
+            'detail': 'Sponsorship transferido correctamente.',
+            'new_sponsor': new_sponsor.email,
+            'sponsor_type': sponsor_type
+        })
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def remove_sponsor(self, request, pk=None):
@@ -279,7 +343,21 @@ class OrganizationViewSet(viewsets.ModelViewSet):
             'accountant_has_pro': pro_access
         })
 
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_incentives(self, request):
+        """Endpoint para que el contador vea sus incentivos."""
+        user = request.user
+        incentives = Incentive.objects.filter(user=user, status__in=['pending', 'granted'])
+        serializer = IncentiveSerializer(incentives, many=True)
+        return Response(serializer.data)
+
 class OrganizationMembershipViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint para gestionar membresías de organizaciones.
+    
+    Permite crear, listar, actualizar y eliminar membresías.
+    También proporciona endpoints para gestionar roles y permisos.
+    """
     serializer_class = OrganizationMembershipSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -306,6 +384,12 @@ class OrganizationMembershipViewSet(viewsets.ModelViewSet):
         instance.delete()
 
 class OrganizationInvitationViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint para gestionar invitaciones a organizaciones.
+    
+    Permite crear, listar, actualizar y eliminar invitaciones.
+    También proporciona endpoints para aceptar y rechazar invitaciones.
+    """
     serializer_class = OrganizationInvitationSerializer
     permission_classes = [permissions.IsAuthenticated]
     lookup_field = 'token'
@@ -369,7 +453,7 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post'])
-    def resend(self, request, pk=None):
+    def resend(self, request, token=None):
         invitation = self.get_object()
         if invitation.status != OrganizationInvitation.StatusChoices.PENDING:
             return Response({'detail': _('Only pending invitations can be resent')}, status=status.HTTP_400_BAD_REQUEST)
@@ -447,6 +531,12 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
         )
 
 class IncentiveViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint para gestionar incentivos.
+    
+    Permite crear, listar, actualizar y eliminar incentivos.
+    También proporciona endpoints para reclamar y usar incentivos.
+    """
     serializer_class = IncentiveSerializer
     permission_classes = [permissions.IsAuthenticated]
 

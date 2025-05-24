@@ -1,29 +1,63 @@
 import api from './axios';
 
-// Obtener miembros de la organización
-export const getOrganizationMembers = (orgId: string | number) =>
-  api.get(`/organizations/${orgId}/members`);
+export interface UpdateOrganizationData {
+  name?: string;
+  type?: string;
+  description?: string;
+}
 
-// Obtener invitaciones de la organización
-export const getOrganizationInvitations = () =>
-  api.get('/invitations');
+export interface InviteMemberData {
+  email: string;
+  role: string;
+  message?: string;
+}
 
-// Invitar miembro
-export const inviteMember = (orgId: string | number, data: { email: string; role: string; message?: string }) =>
-  api.post('/invitations/', { ...data, organization: orgId });
+export const updateOrganization = async (organizationId: number, data: UpdateOrganizationData) => {
+  const response = await api.put(`/organizations/${organizationId}/`, data);
+  return response.data;
+};
 
-// Cambiar rol de miembro
-export const updateMemberRole = (membershipId: string | number, role: string) =>
-  api.patch(`/memberships/${membershipId}`, { role });
+export const getOrganizationMembers = async (organizationId: number) => {
+  const response = await api.get(`/organizations/${organizationId}/members/`);
+  return response.data;
+};
 
-// Remover miembro
-export const removeMember = (membershipId: string | number) =>
-  api.delete(`/memberships/${membershipId}`);
+export const updateMemberRole = async (organizationId: number, memberId: number, role: string) => {
+  const response = await api.put(`/organizations/${organizationId}/members/${memberId}/`, { role });
+  return response.data;
+};
 
-// Reenviar invitación
-export const resendInvitation = (invitationId: string | number) =>
-  api.post(`/invitations/${invitationId}/resend/`);
+export const removeMember = async (organizationId: number, memberId: number) => {
+  const response = await api.delete(`/organizations/${organizationId}/members/${memberId}/`);
+  return response.data;
+};
 
-// Cancelar invitación
-export const cancelInvitation = (invitationId: string | number) =>
-  api.delete(`/invitations/${invitationId}`); 
+export const getOrganizationInvitations = async () => {
+  const response = await api.get(`/invitations/`);
+  return response.data;
+};
+
+export const inviteMember = async (organizationId: number, data: InviteMemberData) => {
+  const response = await api.post(`/organizations/${organizationId}/invite/`, data);
+  return response.data;
+};
+
+export const cancelInvitation = async (invitationToken: string) => {
+  const response = await api.delete(`/invitations/${invitationToken}/`);
+  return response.data;
+};
+
+export const resendInvitation = async (invitationToken: string) => {
+  const response = await api.post(`/invitations/${invitationToken}/resend/`);
+  return response.data;
+};
+
+export const generateMagicLink = async (organizationId: number) => {
+  const response = await api.post(`/organizations/${organizationId}/magic-link/`);
+  return response.data;
+};
+
+export const getOrganization = async (organizationId: number) => {
+  const response = await api.get(`/organizations/${organizationId}/`);
+  return response.data;
+}; 
