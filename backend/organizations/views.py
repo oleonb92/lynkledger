@@ -9,11 +9,12 @@ from django.http import HttpResponse
 import csv
 import json
 from datetime import datetime
-from .models import Organization, OrganizationMembership, OrganizationInvitation
+from .models import Organization, OrganizationMembership, OrganizationInvitation, Incentive
 from .serializers import (
     OrganizationSerializer,
     OrganizationMembershipSerializer,
-    OrganizationInvitationSerializer
+    OrganizationInvitationSerializer,
+    IncentiveSerializer
 )
 from django.core.mail import send_mail
 import os
@@ -21,6 +22,9 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from .stripe_utils import create_stripe_customer
 import stripe
 from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
+from django.utils import timezone
 
 # Create your views here.
 
@@ -210,10 +214,70 @@ class OrganizationViewSet(viewsets.ModelViewSet):
     def transfer_sponsorship(self, request, pk=None):
         org = self.get_object()
         user = request.user
+        new_sponsor_id = request.data.get('new_sponsor_id')
+        sponsor_type = request.data.get('sponsor_type', 'client')
         if org.owner != user:
             return Response({'detail': 'Solo el owner puede transferir el sponsorship.'}, status=403)
-        org.transfer_sponsorship(new_sponsor=user, sponsor_type='client')
-        return Response({'detail': 'Sponsorship transferido correctamente.'})
+        if not new_sponsor_id:
+            return Response({'detail': 'Debes especificar el nuevo sponsor.'}, status=400)
+        try:
+            new_sponsor = org.members.get(id=new_sponsor_id)
+        except Exception:
+            return Response({'detail': 'El nuevo sponsor debe ser miembro de la organización.'}, status=400)
+        org.transfer_sponsorship(new_sponsor=new_sponsor, sponsor_type=sponsor_type)
+        # (Opcional) Aquí puedes notificar al nuevo sponsor por email
+        return Response({'detail': 'Sponsorship transferido correctamente.', 'new_sponsor': new_sponsor.email, 'sponsor_type': sponsor_type})
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def remove_sponsor(self, request, pk=None):
+        org = self.get_object()
+        user = request.user
+        if org.sponsor != user and org.owner != user:
+            return Response({'detail': 'Solo el sponsor o el owner pueden remover el sponsor.'}, status=403)
+        # Si el sponsor es removido, el owner (cliente) debe asumir el pago
+        org.sponsor = org.owner
+        org.sponsor_type = 'client'
+        org.save()
+        # (Opcional) Aquí puedes notificar al owner que ahora es el sponsor
+        return Response({'detail': 'El sponsor ha sido removido. El owner ahora es el sponsor y debe asumir el pago.'})
+
+    @action(detail=False, methods=['get'], url_path='accountant_panel')
+    def accountant_panel(self, request):
+        # Organizaciones donde el usuario es accountant
+        accountant_memberships = OrganizationMembership.objects.filter(
+            user=request.user,
+            role=OrganizationMembership.RoleChoices.ACCOUNTANT
+        ).select_related('organization')
+        data = []
+        for membership in accountant_memberships:
+            org = membership.organization
+            incentives = org.incentives.filter(user=request.user)
+            data.append({
+                'organization': OrganizationSerializer(org, context={'request': request}).data,
+                'plan': org.plan,
+                'pro_features_for_accountant': membership.pro_features_for_accountant,
+                'incentives': IncentiveSerializer(incentives, many=True).data
+            })
+        return Response(data)
+
+    @action(detail=True, methods=['get'], url_path='pro_status')
+    def pro_status(self, request, pk=None):
+        org = self.get_object()
+        # Busca si el usuario es accountant en esta organización
+        try:
+            membership = OrganizationMembership.objects.get(
+                organization=org,
+                user=request.user,
+                role=OrganizationMembership.RoleChoices.ACCOUNTANT
+            )
+            pro_access = membership.pro_features_for_accountant
+        except OrganizationMembership.DoesNotExist:
+            pro_access = False
+        return Response({
+            'organization': OrganizationSerializer(org, context={'request': request}).data,
+            'plan': org.plan,
+            'accountant_has_pro': pro_access
+        })
 
 class OrganizationMembershipViewSet(viewsets.ModelViewSet):
     serializer_class = OrganizationMembershipSerializer
@@ -284,11 +348,21 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
         # Enviar email de invitación
         FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
         invite_link = f"{FRONTEND_URL}/accept-invite/{invitation.token}"
+        context = {
+            'organization': organization,
+            'role': invitation.role,
+            'invite_link': invite_link,
+            'expires_at': invitation.expires_at.strftime('%Y-%m-%d %H:%M'),
+            'year': timezone.now().year,
+        }
+        html_message = render_to_string('organizations/email/invitation.html', context)
+        plain_message = strip_tags(html_message)
         send_mail(
             subject=f"Invitación a unirse a {organization.name} en LynkLedger",
-            message=f"Hola! Has sido invitado a unirte a la organización '{organization.name}' como {invitation.role}.\n\nHaz click en el siguiente enlace para aceptar la invitación:\n{invite_link}\n\nEste enlace expirará el {invitation.expires_at.strftime('%Y-%m-%d %H:%M')}.",
+            message=plain_message,
             from_email=None,
             recipient_list=[invitation.email],
+            html_message=html_message,
             fail_silently=False,
         )
 
@@ -299,7 +373,6 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
         invitation = self.get_object()
         if invitation.status != OrganizationInvitation.StatusChoices.PENDING:
             return Response({'detail': _('Only pending invitations can be resent')}, status=status.HTTP_400_BAD_REQUEST)
-
         # Permisos: solo owner, admin o quien puede gestionar miembros
         membership = OrganizationMembership.objects.filter(
             organization=invitation.organization,
@@ -307,15 +380,24 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
         ).first()
         if not (membership and (membership.role in ['owner', 'admin'] or membership.can_manage_members)):
             return Response({'detail': _("You don't have permission to resend invitations")}, status=status.HTTP_403_FORBIDDEN)
-
         # Reenviar email
         FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
         invite_link = f"{FRONTEND_URL}/accept-invite/{invitation.token}"
+        context = {
+            'organization': invitation.organization,
+            'role': invitation.role,
+            'invite_link': invite_link,
+            'expires_at': invitation.expires_at.strftime('%Y-%m-%d %H:%M'),
+            'year': timezone.now().year,
+        }
+        html_message = render_to_string('organizations/email/invitation.html', context)
+        plain_message = strip_tags(html_message)
         send_mail(
             subject=f"Invitación a unirse a {invitation.organization.name} en LynkLedger",
-            message=f"Hola! Has sido invitado a unirte a la organización '{invitation.organization.name}' como {invitation.role}.\n\nHaz click en el siguiente enlace para aceptar la invitación:\n{invite_link}\n\nEste enlace expirará el {invitation.expires_at.strftime('%Y-%m-%d %H:%M')}.",
+            message=plain_message,
             from_email=None,
             recipient_list=[invitation.email],
+            html_message=html_message,
             fail_silently=False,
         )
         return Response({'detail': _('Invitation resent successfully')}, status=status.HTTP_200_OK)
@@ -363,3 +445,36 @@ class OrganizationInvitationViewSet(viewsets.ModelViewSet):
             {'detail': _("Could not reject invitation")},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+class IncentiveViewSet(viewsets.ModelViewSet):
+    serializer_class = IncentiveSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Incentive.objects.filter(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def claim(self, request, pk=None):
+        incentive = self.get_object()
+        if incentive.status != 'pending':
+            return Response({'detail': 'El incentivo no está pendiente.'}, status=400)
+        incentive.status = 'granted'
+        incentive.granted_at = timezone.now()
+        incentive.save()
+        # (Opcional) Notificar por email
+        return Response({'detail': 'Incentivo reclamado correctamente.'})
+
+    @action(detail=True, methods=['post'])
+    def use(self, request, pk=None):
+        incentive = self.get_object()
+        if incentive.status != 'granted':
+            return Response({'detail': 'El incentivo debe estar otorgado para poder usarse.'}, status=400)
+        incentive.status = 'used'
+        incentive.save()
+        return Response({'detail': 'Incentivo marcado como usado.'})
+
+    @action(detail=False, methods=['get'])
+    def history(self, request):
+        incentives = Incentive.objects.filter(user=request.user)
+        serializer = self.get_serializer(incentives, many=True)
+        return Response(serializer.data)

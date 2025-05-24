@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-from .models import Organization, OrganizationMembership, OrganizationInvitation
+from .models import Organization, OrganizationMembership, OrganizationInvitation, Incentive
 from datetime import timedelta
 from django.utils import timezone
 
@@ -115,4 +115,11 @@ class OrganizationInvitationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         if 'expires_at' not in validated_data or not validated_data['expires_at']:
             validated_data['expires_at'] = timezone.now() + timedelta(hours=24)
-        return super().create(validated_data) 
+        return super().create(validated_data)
+
+class IncentiveSerializer(serializers.ModelSerializer):
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    class Meta:
+        model = Incentive
+        fields = ['id', 'type', 'status', 'created_at', 'granted_at', 'organization', 'organization_name']
+        read_only_fields = ['id', 'created_at', 'granted_at', 'organization_name'] 

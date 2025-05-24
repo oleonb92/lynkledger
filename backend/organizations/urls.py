@@ -3,7 +3,8 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     OrganizationViewSet,
     OrganizationMembershipViewSet,
-    OrganizationInvitationViewSet
+    OrganizationInvitationViewSet,
+    IncentiveViewSet
 )
 from .stripe_webhook import stripe_webhook
 
@@ -13,6 +14,7 @@ router = DefaultRouter()
 router.register(r'organizations', OrganizationViewSet, basename='organization')
 router.register(r'memberships', OrganizationMembershipViewSet, basename='membership')
 router.register(r'invitations', OrganizationInvitationViewSet, basename='invitation')
+router.register(r'incentives', IncentiveViewSet, basename='incentive')
 
 urlpatterns = [
     path('', include(router.urls)),

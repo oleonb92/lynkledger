@@ -88,6 +88,10 @@ class Organization(models.Model):
         self.sponsor_type = sponsor_type
         self.save()
 
+    def sponsor_must_pay(self):
+        """Devuelve True si el sponsor actual debe pagar la suscripción de la organización."""
+        return self.plan == 'pro' and self.sponsor is not None
+
 class OrganizationMembership(models.Model):
     class RoleChoices(models.TextChoices):
         OWNER = 'owner', _('Owner')
@@ -245,6 +249,39 @@ class OrganizationInvitation(models.Model):
     def expire(self):
         if self.status == self.StatusChoices.PENDING:
             self.status = self.StatusChoices.EXPIRED
+            self.save()
+            return True
+        return False
+
+class Incentive(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pendiente'),
+        ('granted', 'Otorgado'),
+        ('used', 'Usado'),
+    ]
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='incentives')
+    organization = models.ForeignKey('Organization', on_delete=models.CASCADE, related_name='incentives')
+    type = models.CharField(max_length=64)  # Tipo genérico, se puede ajustar luego
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    granted_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.user} - {self.organization} ({self.type}) [{self.status}]"
+
+    def claim(self):
+        """Marca el incentivo como otorgado."""
+        if self.status == 'pending':
+            self.status = 'granted'
+            self.granted_at = timezone.now()
+            self.save()
+            return True
+        return False
+
+    def use(self):
+        """Marca el incentivo como usado."""
+        if self.status == 'granted':
+            self.status = 'used'
             self.save()
             return True
         return False

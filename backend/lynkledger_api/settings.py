@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from datetime import timedelta
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -31,31 +32,13 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'lynkledger-backend.onrender.com
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '').split(',')
-CORS_ALLOWED_ORIGIN_REGEXES = [
-    r"^https://\w+\.onrender\.com$",
-]
-CORS_ALLOW_METHODS = [
-    'DELETE',
-    'GET',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-]
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
 
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+def get_env_list(var_name):
+    value = os.environ.get(var_name, '')
+    return [v for v in value.split(',') if v.strip()]
+
+CORS_ALLOWED_ORIGINS = get_env_list('CORS_ALLOWED_ORIGINS')
+CSRF_TRUSTED_ORIGINS = get_env_list('CSRF_TRUSTED_ORIGINS')
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -132,20 +115,38 @@ CHANNEL_LAYERS = {
     },
 }
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-import dj_database_url
-
-DATABASE_URL = os.environ.get('DATABASE_URL')
-
-DATABASES = {
-    'default': dj_database_url.config(
-        default=DATABASE_URL,
-        conn_max_age=600,
-        ssl_require=True
-    )
-}
+# Configuración robusta de base de datos para alternar entre entornos
+if os.environ.get("DJANGO_DEVELOPMENT", "False") == "True":
+    # Si está en desarrollo local y no hay DATABASE_URL, usa la base local
+    if not os.environ.get("DATABASE_URL"):
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': 'lynkledger_local',
+                'USER': 'postgres',
+                'PASSWORD': 'postgres',
+                'HOST': os.environ.get('DB_HOST', 'db'),
+                'PORT': os.environ.get('DB_PORT', '5432'),
+            }
+        }
+    else:
+        # Si hay DATABASE_URL en desarrollo, no requerir SSL
+        DATABASES = {
+            'default': dj_database_url.config(
+                conn_max_age=600,
+                ssl_require=False,
+                default=os.environ.get('DATABASE_URL')
+            )
+        }
+else:
+    # Producción: usa DATABASE_URL obligatoriamente y requiere SSL
+    DATABASES = {
+        'default': dj_database_url.config(
+            conn_max_age=600,
+            ssl_require=True,
+            default=os.environ.get('DATABASE_URL')
+        )
+    }
 
 # Cache configuration
 CACHES = {
@@ -253,7 +254,6 @@ CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_USE_SESSIONS = True
 CSRF_COOKIE_SECURE = not DEBUG
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
 
 # Security settings
 SECURE_SSL_REDIRECT = not DEBUG

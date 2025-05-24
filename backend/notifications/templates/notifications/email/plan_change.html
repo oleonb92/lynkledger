@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Cambio de plan en {{ organization.name }}</title>
+</head>
+<body style="font-family: Arial, sans-serif; background: #f7f7f7; color: #222;">
+  <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 32px;">
+    <img src="https://lynkledger.com/logo.png" alt="LynkLedger" style="width: 120px; margin-bottom: 24px;">
+    <h2>¡Hola {{ user.get_full_name|default:user.email }}!</h2>
+    <p>
+      El plan de la organización <strong>{{ organization.name }}</strong> ha cambiado:
+    </p>
+    <ul>
+      <li><strong>Antes:</strong> {{ old_plan|title }}</li>
+      <li><strong>Ahora:</strong> {{ new_plan|title }}</li>
+    </ul>
+    <p>
+      Puedes ver los detalles y gestionar tu suscripción en tu <a href="{{ frontend_url }}/organizations/{{ organization.id }}/settings">panel de LynkLedger</a>.
+    </p>
+    <p>¡Gracias por confiar en LynkLedger!</p>
+    <p style="margin-top: 32px; color: #888; font-size: 12px;">LynkLedger &copy; {{ year }}</p>
+  </div>
+</body>
+</html> 

@@ -155,6 +155,10 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
+    # New fields for professional features and Stripe customer ID
+    pro_features = models.BooleanField(_('pro features'), default=False)
+    stripe_customer_id = models.CharField(_('stripe customer id'), max_length=128, blank=True, null=True)
+
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')

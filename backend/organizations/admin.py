@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from .models import Organization, OrganizationMembership, OrganizationInvitation
+from .models import Organization, OrganizationMembership, OrganizationInvitation, Incentive
 
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
@@ -83,3 +83,5 @@ class OrganizationInvitationAdmin(admin.ModelAdmin):
         if obj and obj.status != 'pending':
             return False
         return super().has_change_permission(request, obj)
+
+admin.site.register(Incentive)

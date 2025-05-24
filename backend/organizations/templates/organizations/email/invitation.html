@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Invitación a unirse a {{ organization.name }}</title>
+</head>
+<body style="font-family: Arial, sans-serif; background: #f7f7f7; color: #222;">
+  <div style="max-width: 480px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 32px;">
+    <img src="https://lynkledger.com/logo.png" alt="LynkLedger" style="width: 120px; margin-bottom: 24px;">
+    <h2>¡Hola!</h2>
+    <p>
+      Has sido invitado a unirte a la organización <strong>{{ organization.name }}</strong> como <strong>{{ role }}</strong>.
+    </p>
+    <p>
+      Haz click en el siguiente botón para aceptar la invitación:
+    </p>
+    <p style="text-align: center;">
+      <a href="{{ invite_link }}" style="background: #007bff; color: #fff; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: bold;">Aceptar invitación</a>
+    </p>
+    <p>
+      Este enlace expirará el <strong>{{ expires_at }}</strong>.
+    </p>
+    <p style="color: #888; font-size: 12px;">Si no reconoces esta invitación, puedes ignorar este mensaje.</p>
+    <p style="margin-top: 32px; color: #888; font-size: 12px;">LynkLedger &copy; {{ year }}</p>
+  </div>
+</body>
+</html> 

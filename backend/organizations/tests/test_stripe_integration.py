@@ -66,7 +66,10 @@ class StripeIntegrationTests(TestCase):
     @patch('stripe.Customer.create')
     @patch('stripe.checkout.Session.create')
     def test_create_stripe_customer(self, mock_session_create, mock_create):
-        mock_create.return_value = MagicMock(id='cus_test123')
+        mock_customer = MagicMock()
+        mock_customer.id = 'cus_test123'
+        mock_customer.__getitem__.side_effect = lambda key: 'cus_test123' if key == 'id' else None
+        mock_create.return_value = mock_customer
         mock_session_create.return_value = MagicMock(url='https://checkout.stripe.com/test')
         
         # Intentar iniciar suscripción
