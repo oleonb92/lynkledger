@@ -52,10 +52,10 @@ class CustomUserAdmin(UserAdmin):
         }),
         (_('Notification settings'), {
             'fields': ('email_notifications', 'push_notifications',
-                      'in_app_notifications', 'notification_preferences')
+                      'in_app_notifications')
         }),
         (_('AI settings'), {
-            'fields': ('ai_suggestions', 'ai_analysis', 'ai_preferences')
+            'fields': ('ai_suggestions', 'ai_analysis')
         }),
         (_('Activity tracking'), {
             'fields': ('last_active', 'last_login_ip', 'registration_ip')
