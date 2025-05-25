@@ -44,11 +44,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 invitation = OrganizationInvitation.objects.get(token=invitation_token, status=OrganizationInvitation.StatusChoices.PENDING)
             except OrganizationInvitation.DoesNotExist:
                 raise serializers.ValidationError({'invitation_token': _('Invalid or expired invitation token.')})
-            # Validar que no exista usuario con ese email
-            if User.objects.filter(email=invitation.email).exists():
+            # Usar el email de la invitación como email y username
+            invitation_email = invitation.email
+            validated_data['email'] = invitation_email
+            validated_data['username'] = invitation_email
+            # Validar que no exista usuario con ese email o username
+            if User.objects.filter(email=invitation_email).exists() or User.objects.filter(username=invitation_email).exists():
                 raise serializers.ValidationError({'email': _('A user with this email already exists. Please log in instead.')})
-            # Usar el email de la invitación
-            validated_data['email'] = invitation.email
             user = User.objects.create_user(**validated_data)
             # Asociar usuario a la organización
             OrganizationMembership.objects.create(
