@@ -37,17 +37,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             invitation_token = request.data.get('invitation_token')
         organization_name = validated_data.pop('organization_name')
         validated_data.pop('confirm_password')
-        
-        # Create user
-        user = User.objects.create_user(**validated_data)
-        
+
         if invitation_token:
             # Registro por invitación: asociar a la organización de la invitación
             try:
-                invitation = OrganizationInvitation.objects.get(token=invitation_token, email=user.email, status=OrganizationInvitation.StatusChoices.PENDING)
+                invitation = OrganizationInvitation.objects.get(token=invitation_token, status=OrganizationInvitation.StatusChoices.PENDING)
             except OrganizationInvitation.DoesNotExist:
-                user.delete()
                 raise serializers.ValidationError({'invitation_token': _('Invalid or expired invitation token.')})
+            # Validar que no exista usuario con ese email
+            if User.objects.filter(email=invitation.email).exists():
+                raise serializers.ValidationError({'email': _('A user with this email already exists. Please log in instead.')})
+            # Usar el email de la invitación
+            validated_data['email'] = invitation.email
+            user = User.objects.create_user(**validated_data)
             # Asociar usuario a la organización
             OrganizationMembership.objects.create(
                 organization=invitation.organization,
@@ -77,6 +79,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 slug = f"{base_slug}-{counter}"
                 counter += 1
             try:
+                user = User.objects.create_user(**validated_data)
                 organization = Organization.objects.create(
                     name=organization_name,
                     slug=slug,
@@ -84,7 +87,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                     organization_type='business'  # Default type
                 )
             except Exception as e:
-                user.delete()
                 raise serializers.ValidationError({
                     'organization_name': _('An organization with this name already exists. Please choose another name.')
                 })
