@@ -62,7 +62,7 @@ class Organization(models.Model):
     # Relationships
     owner = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='owned_organizations',
         verbose_name=_("Propietario")
     )
