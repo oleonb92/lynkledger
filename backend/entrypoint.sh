@@ -5,25 +5,32 @@ set -ex
 
 # Function to log messages
 log() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
 # Print environment variables (excluding sensitive ones)
 log "Environment variables:"
 env | grep -v "PASSWORD\|SECRET\|KEY" | sort
 
-# Wait for database with timeout
-log "Waiting for database..."
+# Wait for postgres to be ready
+log "Waiting for postgres to be ready..."
 timeout=30
-while ! nc -z $DB_HOST $DB_PORT; do
+until PGPASSWORD=$POSTGRES_PASSWORD psql -h "$DB_HOST" -U "$POSTGRES_USER" -d "postgres" -c '\q'; do
     if [ $timeout -le 0 ]; then
         log "Error: Database connection timeout"
         exit 1
     fi
-    sleep 0.1
+    log "Postgres is unavailable - sleeping"
+    sleep 1
     timeout=$((timeout-1))
 done
-log "Database is up!"
+log "Postgres is up"
+
+# Create database if it doesn't exist
+log "Creating database if it doesn't exist..."
+PGPASSWORD=$POSTGRES_PASSWORD psql -h "$DB_HOST" -U "$POSTGRES_USER" -d "postgres" -tc "SELECT 1 FROM pg_database WHERE datname = '$POSTGRES_DB'" | grep -q 1 || \
+PGPASSWORD=$POSTGRES_PASSWORD psql -h "$DB_HOST" -U "$POSTGRES_USER" -d "postgres" -c "CREATE DATABASE $POSTGRES_DB"
+log "Database check/creation completed"
 
 # Apply database migrations with error handling
 log "Applying database migrations..."
@@ -97,8 +104,7 @@ ls -la /app/staticfiles/admin/css/ || {
     exit 1
 }
 
-# Start server
-log "Starting server..."
-exec gunicorn lynkledger_api.wsgi:application --bind 0.0.0.0:8000 --log-level debug
+log "Setup completed successfully"
 
-log "Setup completed successfully" 
+# Start server
+exec gunicorn lynkledger_api.wsgi:application --bind 0.0.0.0:8000 --log-level debug 
