@@ -466,6 +466,10 @@ class OrganizationInvitation(models.Model):
         self.accepted_by = user
         self.save()
 
+        # Marcar usuario como verificado
+        user.is_verified = True
+        user.save(update_fields=['is_verified'])
+
         # Create membership
         membership = OrganizationMembership.objects.create(
             organization=self.organization,
