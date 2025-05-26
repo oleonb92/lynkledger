@@ -1,3 +1,13 @@
+import os
+import dj_database_url
+
+# Debug settings
+DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
+
+# Create logs directory if it doesn't exist
+LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
+os.makedirs(LOGS_DIR, exist_ok=True)
+
 # Logging Configuration
 LOGGING = {
     'version': 1,
@@ -27,7 +37,7 @@ LOGGING = {
         'file': {
             'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',
-            'filename': 'logs/lynkledger.log',
+            'filename': os.path.join(LOGS_DIR, 'lynkledger.log'),
             'maxBytes': 1024 * 1024 * 5,  # 5 MB
             'backupCount': 5,
             'formatter': 'verbose',
@@ -177,6 +187,31 @@ INSTALLED_APPS = [
     'corsheaders',
     'users',
     'organizations',
-    'subscriptions',
-    'incentives',
-] 
+    # 'subscriptions',  # Eliminado porque no existe
+    # 'incentives',     # Eliminado porque no existe
+]
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+DATABASES = {
+    'default': dj_database_url.config(
+        default=os.getenv('DATABASE_URL', 'postgres://postgres:postgres@db:5432/lynkledger')
+    )
+}
+
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'staticfiles') 
