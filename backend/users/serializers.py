@@ -37,7 +37,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             invitation_token = request.data.get('invitation_token')
         organization_name = validated_data.pop('organization_name')
         validated_data.pop('confirm_password')
-
+        
         if invitation_token:
             # Registro por invitación: asociar a la organización de la invitación
             try:
@@ -52,6 +52,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             if User.objects.filter(email=invitation_email).exists() or User.objects.filter(username=invitation_email).exists():
                 raise serializers.ValidationError({'email': _('A user with this email already exists. Please log in instead.')})
             user = User.objects.create_user(**validated_data)
+            # Marcar usuario como verificado
+            user.is_verified = True
+            user.save(update_fields=['is_verified'])
             # Asociar usuario a la organización
             OrganizationMembership.objects.create(
                 organization=invitation.organization,
